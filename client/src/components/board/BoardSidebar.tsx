@@ -4,7 +4,10 @@ import type { OnlineUser, Board } from '../../types';
 import type { ConnectionStatus } from '../../hooks/useSocket';
 import type { Comment, ChatMessage, Task, ActivityItem, BoardVersion, WorkspaceMember } from '../../types/saas';
 
-export type SidebarTab = 'share' | 'chat' | 'comments' | 'tasks' | 'activity' | 'history';
+import MeetingPanel from './MeetingPanel';
+import type { RemotePeer } from '../../hooks/useWebRTC';
+
+export type SidebarTab = 'share' | 'chat' | 'comments' | 'tasks' | 'activity' | 'history' | 'meeting';
 
 interface BoardSidebarProps {
   board: Board;
@@ -30,6 +33,18 @@ interface BoardSidebarProps {
   copied: boolean;
   shareUrl: string;
   parseMentions: (text: string) => string[];
+  meeting: {
+    inCall: boolean;
+    localStream: MediaStream | null;
+    remotePeers: RemotePeer[];
+    muted: boolean;
+    videoOff: boolean;
+    error: string | null;
+    onJoin: () => void;
+    onLeave: () => void;
+    onToggleMute: () => void;
+    onToggleVideo: () => void;
+  };
 }
 
 const TABS: { id: SidebarTab; label: string; icon: string }[] = [
@@ -38,6 +53,7 @@ const TABS: { id: SidebarTab; label: string; icon: string }[] = [
   { id: 'comments', label: 'Comments', icon: '🗨️' },
   { id: 'tasks', label: 'Tasks', icon: '✅' },
   { id: 'activity', label: 'Activity', icon: '📋' },
+  { id: 'meeting', label: 'Meeting', icon: '📹' },
   { id: 'history', label: 'History', icon: '🕐' },
 ];
 
@@ -319,6 +335,23 @@ export default function BoardSidebar(props: BoardSidebarProps) {
             ))}
             {props.versions.length === 0 && <p className="text-gray-500 text-sm">No versions yet</p>}
           </div>
+        )}
+
+        {tab === 'meeting' && (
+          <MeetingPanel
+            inCall={props.meeting.inCall}
+            localStream={props.meeting.localStream}
+            remotePeers={props.meeting.remotePeers}
+            muted={props.meeting.muted}
+            videoOff={props.meeting.videoOff}
+            error={props.meeting.error}
+            onlineCount={props.onlineUsers.length}
+            onJoin={props.meeting.onJoin}
+            onLeave={props.meeting.onLeave}
+            onToggleMute={props.meeting.onToggleMute}
+            onToggleVideo={props.meeting.onToggleVideo}
+            viewOnly={props.viewOnly}
+          />
         )}
       </div>
     </aside>

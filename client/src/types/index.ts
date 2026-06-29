@@ -1,4 +1,4 @@
-export type Tool = 'pen' | 'rectangle' | 'circle' | 'line' | 'eraser' | 'text' | 'sticky' | 'select';
+export type Tool = 'pen' | 'rectangle' | 'circle' | 'line' | 'eraser' | 'text' | 'sticky' | 'select' | 'image';
 
 export interface User {
   id: string;

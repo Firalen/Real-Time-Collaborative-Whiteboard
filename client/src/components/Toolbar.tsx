@@ -11,6 +11,10 @@ interface ToolbarProps {
   onRedo: () => void;
   onExport: () => void;
   onClear: () => void;
+  onGroup: () => void;
+  onUngroup: () => void;
+  onImageUpload: (file: File) => void;
+  onShowShortcuts: () => void;
   canUndo: boolean;
   canRedo: boolean;
 }
@@ -42,6 +46,10 @@ export default function Toolbar({
   onRedo,
   onExport,
   onClear,
+  onGroup,
+  onUngroup,
+  onImageUpload,
+  onShowShortcuts,
   canUndo,
   canRedo,
 }: ToolbarProps) {
@@ -119,6 +127,21 @@ export default function Toolbar({
       <div className="toolbar-divider" />
 
       <div className="toolbar-section">
+        <button className="tool-btn" onClick={onGroup} title="Group (Ctrl+G)">⊞</button>
+        <button className="tool-btn" onClick={onUngroup} title="Ungroup (Ctrl+Shift+G)">⊟</button>
+        <label className="tool-btn image-upload" title="Upload image">
+          🖼
+          <input
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onImageUpload(file);
+              e.target.value = '';
+            }}
+          />
+        </label>
         <button className="tool-btn" onClick={onUndo} disabled={!canUndo} title="Undo (Ctrl+Z)">
           ↩
         </button>
@@ -130,6 +153,9 @@ export default function Toolbar({
         </button>
         <button className="tool-btn" onClick={onClear} title="Clear canvas">
           🗑️
+        </button>
+        <button className="tool-btn" onClick={onShowShortcuts} title="Shortcuts (?)">
+          ⌨
         </button>
       </div>
     </div>

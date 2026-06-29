@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../utils/api';
 import NotificationBell from './NotificationBell';
 
 interface AppLayoutProps {
@@ -7,7 +9,13 @@ interface AppLayoutProps {
 }
 
 export default function AppLayout({ children }: AppLayoutProps) {
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!token) return;
+    api.checkAdmin(token).then((r) => setIsAdmin(r.isAdmin)).catch(() => {});
+  }, [token]);
 
   return (
     <div className="min-h-screen bg-[#0f1117] text-gray-100">
@@ -20,6 +28,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <nav className="flex items-center gap-4">
             {user && (
               <>
+                <Link to="/gallery" className="text-sm text-gray-400 hover:text-white transition-colors">
+                  Gallery
+                </Link>
+                {isAdmin && (
+                  <Link to="/admin" className="text-sm text-gray-400 hover:text-white transition-colors">
+                    Admin
+                  </Link>
+                )}
                 <Link to="/tasks" className="text-sm text-gray-400 hover:text-white transition-colors">
                   My Tasks
                 </Link>

@@ -663,6 +663,76 @@ input {
 .password-gate-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; max-width: 360px; width: 100%; text-align: center; }
 .mt-4 { margin-top: 1rem; }
 
+.viewport-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.zoom-label { font-size: 0.75rem; min-width: 3rem; text-align: center; }
+.tool-btn.sm { width: 28px; height: 28px; font-size: 0.85rem; }
+
+.canvas-main-row { display: flex; flex: 1; min-height: 0; }
+
+.layers-panel {
+  width: 180px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 0.5rem;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.layers-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+.layers-header h3 { font-size: 0.85rem; }
+.layers-list { list-style: none; padding: 0; margin: 0; }
+.layer-item {
+  display: flex; align-items: center; gap: 0.25rem;
+  padding: 0.35rem; border-radius: 4px; cursor: pointer; font-size: 0.75rem;
+}
+.layer-item.active { background: var(--surface-2); }
+.layer-toggle { background: none; border: none; padding: 0; font-size: 0.75rem; cursor: pointer; }
+.layer-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.ai-panel {
+  width: 220px;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  padding: 0.75rem;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.ai-panel h3 { font-size: 0.85rem; margin-bottom: 0.5rem; }
+
+.shortcuts-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center; z-index: 1000;
+}
+.shortcuts-modal {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 1.5rem; max-width: 420px; width: 90%;
+}
+.shortcuts-modal table { width: 100%; font-size: 0.85rem; margin: 1rem 0; }
+.shortcuts-modal kbd {
+  background: var(--surface-2); padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.75rem;
+}
+.image-upload { cursor: pointer; position: relative; }
+
+.meeting-panel h3 { font-size: 0.85rem; margin-bottom: 0.5rem; }
+.meeting-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin: 0.75rem 0; }
+.meeting-tile { position: relative; background: #000; border-radius: 8px; overflow: hidden; aspect-ratio: 4/3; }
+.meeting-tile video { width: 100%; height: 100%; object-fit: cover; }
+.meeting-tile video.mirror { transform: scaleX(-1); }
+.meeting-tile-label {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 0.25rem 0.5rem; background: rgba(0,0,0,0.6); font-size: 0.65rem;
+}
+.meeting-controls { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.meeting-join-btn { width: 100%; margin-top: 0.5rem; }
+.meeting-leave-btn { background: #dc2626 !important; }
+.meeting-error { color: #f87171; font-size: 0.75rem; margin: 0.5rem 0; }
+
 @media (max-width: 768px) {
   .sidebar {
     display: none;

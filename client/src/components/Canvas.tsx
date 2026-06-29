@@ -8,7 +8,15 @@ import { useAuth } from '../context/AuthContext';
 import Toolbar from './Toolbar';
 import Cursors from './Cursors';
 import BoardSidebar from './board/BoardSidebar';
+import LayersPanel from './canvas/LayersPanel';
+import ViewportControls from './canvas/ViewportControls';
+import AiPanel from './canvas/AiPanel';
+import KeyboardShortcuts from './canvas/KeyboardShortcuts';
 import ToastContainer from './ToastContainer';
+import { useCanvasViewport } from '../hooks/useCanvasViewport';
+import { useWebRTC } from '../hooks/useWebRTC';
+import { useCanvasStore } from '../stores/canvasStore';
+import { api } from '../utils/api';
 
 interface CanvasProps {
   boardId: string;
@@ -33,7 +41,9 @@ export default function Canvas({ boardId, board, viewOnly = false }: CanvasProps
   const [canRedo, setCanRedo] = useState(false);
   const [copied, setCopied] = useState(false);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
+  const canvasStore = useCanvasStore();
   const collab = useBoardCollaboration(boardId, token, board.workspaceId);
 
   const updateHistoryState = useCallback(() => {
@@ -52,9 +62,14 @@ export default function Canvas({ boardId, board, viewOnly = false }: CanvasProps
   const {
     undo, redo, addText, addStickyNote, clearCanvas,
     loadCanvasData, applyRemoteObject, applyRemoteRemove, applyRemoteClear,
-    exportPNG, getCanvasData, applyTaskVisuals, canUndo: checkUndo, canRedo: checkRedo,
+    exportPNG, getCanvasData, applyTaskVisuals, groupSelection, ungroupSelection,
+    deleteSelection, addImage, addMindMapNodes,
+    canUndo: checkUndo, canRedo: checkRedo, canvasRef: fabricCanvasRef,
   } = useCanvas(containerRef, {
     tool, color, strokeWidth, viewOnly,
+    snapEnabled: canvasStore.snapEnabled,
+    gridSize: canvasStore.gridSize,
+    activeLayerId: canvasStore.activeLayerId,
     onDraw: handleDraw,
     onHistoryChange: updateHistoryState,
     onSelectionChange: collab.setSelectedElementId,
@@ -62,10 +77,11 @@ export default function Canvas({ boardId, board, viewOnly = false }: CanvasProps
 
   checkUndoRef.current = checkUndo;
   checkRedoRef.current = checkRedo;
+  const { resetView, zoomIn, zoomOut, zoom } = useCanvasViewport(fabricCanvasRef);
   const emitDrawRef = useRef<(event: DrawEvent) => void>();
 
   const {
-    connectionStatus, cursors, onlineUsers,
+    connectionStatus, cursors, onlineUsers, socketRef,
     emitDraw, emitCursorMove, saveCanvas, emitChat,
   } = useSocket({
     boardId, token, guestName: user?.name, viewOnly,
@@ -85,6 +101,14 @@ export default function Canvas({ boardId, board, viewOnly = false }: CanvasProps
   });
 
   emitDrawRef.current = emitDraw;
+
+  const meetingUserId = user?.id || 'guest';
+  const meeting = useWebRTC(socketRef, meetingUserId, user?.name || 'Guest');
+
+  useEffect(() => {
+    if (!token) return;
+    api.getLayers(token, boardId).then((layers) => canvasStore.setLayers(layers)).catch(() => {});
+  }, [token, boardId, canvasStore]);
 
   useEffect(() => {
     if (!board.canvasData) return;
@@ -138,13 +162,38 @@ export default function Canvas({ boardId, board, viewOnly = false }: CanvasProps
         e.preventDefault(); undo(); updateHistoryState();
       } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
         e.preventDefault(); redo(); updateHistoryState();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'g' && !e.shiftKey) {
+        e.preventDefault(); groupSelection();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'g' && e.shiftKey) {
+        e.preventDefault(); ungroupSelection();
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        deleteSelection();
+      } else if (e.key === '?' && e.shiftKey) {
+        setShowShortcuts(true);
       } else if (!e.ctrlKey && !e.metaKey && TOOL_SHORTCUTS[e.key]) {
         setTool(TOOL_SHORTCUTS[e.key]);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undo, redo, updateHistoryState, viewOnly]);
+  }, [undo, redo, updateHistoryState, viewOnly, groupSelection, ungroupSelection, deleteSelection]);
+
+  const handleImageUpload = async (file: File) => {
+    if (!token || !board.workspaceId) return;
+    try {
+      const asset = await api.uploadAsset(token, board.workspaceId, file);
+      await addImage(asset.url);
+      showToast('Image added', 'success');
+    } catch {
+      showToast('Image upload failed', 'error');
+    }
+  };
+
+  const handleAddLayer = async () => {
+    if (!token) return;
+    const layer = await api.createLayer(token, boardId, `Layer ${canvasStore.layers.length + 1}`);
+    canvasStore.setLayers([...canvasStore.layers, layer]);
+  };
 
   const shareUrl = window.location.href;
 
@@ -195,6 +244,18 @@ export default function Canvas({ boardId, board, viewOnly = false }: CanvasProps
         copied={copied}
         shareUrl={shareUrl}
         parseMentions={collab.parseMentions}
+        meeting={{
+          inCall: meeting.inCall,
+          localStream: meeting.localStream,
+          remotePeers: meeting.remotePeers,
+          muted: meeting.muted,
+          videoOff: meeting.videoOff,
+          error: meeting.error,
+          onJoin: meeting.joinCall,
+          onLeave: meeting.leaveCall,
+          onToggleMute: meeting.toggleMute,
+          onToggleVideo: meeting.toggleVideo,
+        }}
       />
 
       <div className="canvas-area">
@@ -210,18 +271,66 @@ export default function Canvas({ boardId, board, viewOnly = false }: CanvasProps
             onRedo={() => { redo(); updateHistoryState(); }}
             onExport={exportPNG}
             onClear={() => { if (confirm('Clear canvas?')) clearCanvas(); }}
+            onGroup={groupSelection}
+            onUngroup={ungroupSelection}
+            onImageUpload={handleImageUpload}
+            onShowShortcuts={() => setShowShortcuts(true)}
             canUndo={canUndo}
             canRedo={canRedo}
           />
         )}
 
-        <div ref={containerRef} className="canvas-container">
-          <canvas id="whiteboard-canvas" />
-          <Cursors cursors={cursors} />
+        <ViewportControls
+          zoom={zoom}
+          onZoomIn={zoomIn}
+          onZoomOut={zoomOut}
+          onReset={resetView}
+          gridEnabled={canvasStore.gridEnabled}
+          snapEnabled={canvasStore.snapEnabled}
+          onToggleGrid={canvasStore.toggleGrid}
+          onToggleSnap={canvasStore.toggleSnap}
+        />
+
+        <div className="canvas-main-row">
+          {canvasStore.showLayers && !viewOnly && (
+            <LayersPanel
+              onAddLayer={handleAddLayer}
+              onToggleVisibility={(id) => {
+                const layer = canvasStore.layers.find((l) => l.id === id);
+                if (layer && token) {
+                  api.updateLayer(token, boardId, id, { visible: !layer.visible });
+                  canvasStore.updateLayer(id, { visible: !layer.visible });
+                }
+              }}
+              onToggleLock={(id) => {
+                const layer = canvasStore.layers.find((l) => l.id === id);
+                if (layer && token) {
+                  api.updateLayer(token, boardId, id, { locked: !layer.locked });
+                  canvasStore.updateLayer(id, { locked: !layer.locked });
+                }
+              }}
+            />
+          )}
+
+          <div ref={containerRef} className="canvas-container">
+            <canvas id="whiteboard-canvas" />
+            <Cursors cursors={cursors} />
+          </div>
+
+          {!viewOnly && board.workspaceId && (
+            <AiPanel
+              workspaceId={board.workspaceId}
+              boardId={boardId}
+              token={token}
+              onMindMap={(nodes) => addMindMapNodes(nodes as { nodes?: { id: string; label: string; x: number; y: number }[] })}
+              onImageUrl={(url) => addImage(url)}
+            />
+          )}
         </div>
       </div>
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      <KeyboardShortcuts open={showShortcuts} onClose={() => setShowShortcuts(false)} />
     </div>
   );
 }

@@ -7,15 +7,21 @@ import {
   Line,
   IText,
   FabricObject,
+  FabricImage,
+  ActiveSelection,
+  Group,
   util,
   Point,
 } from 'fabric';
 import type { Tool, DrawEvent } from '../types';
 import { HistoryManager, AddObjectCommand, FinalizeAddCommand, RemoveObjectCommand } from '../utils/commands';
 
-function assignElementId(obj: FabricObject) {
+function assignElementId(obj: FabricObject, layerId?: string | null) {
   if (!obj.get('elementId')) {
     obj.set('elementId', crypto.randomUUID());
+  }
+  if (layerId && !obj.get('layerId')) {
+    obj.set('layerId', layerId);
   }
   return obj.get('elementId') as string;
 }
@@ -39,6 +45,9 @@ interface UseCanvasOptions {
   color: string;
   strokeWidth: number;
   tool: Tool;
+  snapEnabled?: boolean;
+  gridSize?: number;
+  activeLayerId?: string | null;
   onDraw?: (event: DrawEvent) => void;
   onHistoryChange?: () => void;
   onSelectionChange?: (elementId: string | null) => void;
@@ -88,7 +97,7 @@ export function useCanvas(
       const path = e.path;
       if (!path) return;
 
-      assignElementId(path);
+      assignElementId(path, optionsRef.current.activeLayerId);
       const cmd = new AddObjectCommand(canvas, path);
       historyRef.current.execute(cmd);
       optionsRef.current.onHistoryChange?.();
@@ -104,7 +113,7 @@ export function useCanvas(
       if (e.target?.type === 'path') return;
       const obj = e.target;
       if (!obj || obj.get('isRemote')) return;
-      assignElementId(obj);
+      assignElementId(obj, optionsRef.current.activeLayerId);
 
       optionsRef.current.onDraw?.({
         type: 'object-added',
@@ -122,11 +131,25 @@ export function useCanvas(
     canvas.on('selection:updated', onSelection);
     canvas.on('selection:cleared', () => optionsRef.current.onSelectionChange?.(null));
 
+    const onMoving = (e: { target?: FabricObject }) => {
+      const { snapEnabled, gridSize } = optionsRef.current;
+      if (!snapEnabled || !gridSize || !e.target) return;
+      const obj = e.target;
+      const gs = gridSize;
+      obj.set({
+        left: Math.round((obj.left || 0) / gs) * gs,
+        top: Math.round((obj.top || 0) / gs) * gs,
+      });
+    };
+
+    canvas.on('object:moving', onMoving);
+
     return () => {
       window.removeEventListener('resize', handleResize);
       canvas.off('selection:created', onSelection);
       canvas.off('selection:updated', onSelection);
       canvas.off('selection:cleared');
+      canvas.off('object:moving', onMoving);
       canvas.dispose();
       canvasRef.current = null;
     };
@@ -479,6 +502,94 @@ export function useCanvas(
     canvas.requestRenderAll();
   }, []);
 
+  const groupSelection = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const active = canvas.getActiveObject();
+    if (!(active instanceof ActiveSelection)) return;
+    const objects = active.getObjects();
+    canvas.discardActiveObject();
+    objects.forEach((obj) => canvas.remove(obj));
+    const group = new Group(objects);
+    assignElementId(group, optionsRef.current.activeLayerId);
+    canvas.add(group);
+    canvas.setActiveObject(group);
+    canvas.requestRenderAll();
+    optionsRef.current.onDraw?.({ type: 'object-added', object: serializeObject(group) });
+  }, []);
+
+  const ungroupSelection = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const active = canvas.getActiveObject();
+    if (!(active instanceof Group)) return;
+    const items = active.removeAll();
+    canvas.remove(active);
+    items.forEach((obj) => canvas.add(obj));
+    const selection = new ActiveSelection(items, { canvas });
+    canvas.setActiveObject(selection);
+    canvas.requestRenderAll();
+  }, []);
+
+  const deleteSelection = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const active = canvas.getActiveObjects();
+    active.forEach((obj) => {
+      const elementId = obj.get('elementId') as string;
+      const cmd = new RemoveObjectCommand(canvas, obj);
+      historyRef.current.execute(cmd);
+      if (elementId) {
+        optionsRef.current.onDraw?.({ type: 'object-removed', object: { elementId } });
+      }
+    });
+    canvas.discardActiveObject();
+    optionsRef.current.onHistoryChange?.();
+  }, []);
+
+  const addImage = useCallback(async (url: string, x = 100, y = 100) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const img = await FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
+    img.set({ left: x, top: y, scaleX: 0.5, scaleY: 0.5 });
+    assignElementId(img, optionsRef.current.activeLayerId);
+    const cmd = new AddObjectCommand(canvas, img);
+    historyRef.current.execute(cmd);
+    optionsRef.current.onHistoryChange?.();
+    optionsRef.current.onDraw?.({ type: 'object-added', object: serializeObject(img) });
+  }, []);
+
+  const addMindMapNodes = useCallback((data: { root?: string; nodes?: { id: string; label: string; x: number; y: number }[] }) => {
+    const canvas = canvasRef.current;
+    if (!canvas || !data.nodes) return;
+    data.nodes.forEach((node) => {
+      const rect = new Rect({
+        left: node.x,
+        top: node.y,
+        width: 140,
+        height: 48,
+        fill: '#e0e7ff',
+        stroke: '#6366f1',
+        rx: 8,
+        ry: 8,
+      });
+      const text = new IText(node.label, {
+        left: node.x + 10,
+        top: node.y + 14,
+        fontSize: 14,
+        fill: '#312e81',
+        fontFamily: 'Inter, sans-serif',
+      });
+      assignElementId(rect, optionsRef.current.activeLayerId);
+      assignElementId(text, optionsRef.current.activeLayerId);
+      canvas.add(rect, text);
+      optionsRef.current.onDraw?.({ type: 'object-added', object: serializeObject(rect) });
+      optionsRef.current.onDraw?.({ type: 'object-added', object: serializeObject(text) });
+    });
+    canvas.requestRenderAll();
+    optionsRef.current.onHistoryChange?.();
+  }, []);
+
   return {
     canvasRef,
     undo,
@@ -495,5 +606,10 @@ export function useCanvas(
     exportPNG,
     getCanvasData,
     applyTaskVisuals,
+    groupSelection,
+    ungroupSelection,
+    deleteSelection,
+    addImage,
+    addMindMapNodes,
   };
 }

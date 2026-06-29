@@ -18,6 +18,15 @@ const chatRoutes = require('./routes/chat');
 const taskRoutes = require('./routes/tasks');
 const notificationRoutes = require('./routes/notifications');
 const integrationRoutes = require('./routes/integrations');
+const aiRoutes = require('./routes/ai');
+const billingRoutes = require('./routes/billing');
+const assetRoutes = require('./routes/assets');
+const layerRoutes = require('./routes/layers');
+const meetingRoutes = require('./routes/meetings');
+const galleryRoutes = require('./routes/gallery');
+const adminRoutes = require('./routes/admin');
+const platformRoutes = require('./routes/platform');
+const { UPLOAD_DIR } = require('./services/storage');
 const { authLimiter, apiLimiter } = require('./middleware/rateLimiter');
 const errorHandler = require('./middleware/errorHandler');
 const { registerSocketHandlers } = require('./socket/handlers');
@@ -56,6 +65,7 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
+app.use('/uploads', express.static(UPLOAD_DIR));
 app.use('/api', apiLimiter);
 
 app.get('/health', async (_req, res) => {
@@ -80,6 +90,14 @@ app.use('/api/boards/:boardId/chat', chatRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/workspaces/:workspaceId/integrations', integrationRoutes);
+app.use('/api/workspaces/:workspaceId/ai', aiRoutes);
+app.use('/api/workspaces/:workspaceId/assets', assetRoutes);
+app.use('/api/billing', billingRoutes);
+app.use('/api/boards/:boardId/layers', layerRoutes);
+app.use('/api/boards/:boardId/meetings', meetingRoutes);
+app.use('/api/gallery', galleryRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/platform', platformRoutes);
 
 registerSocketHandlers(io);
 app.set('io', io);

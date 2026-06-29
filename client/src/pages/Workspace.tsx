@@ -21,12 +21,24 @@ export default function WorkspacePage() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [slackWebhook, setSlackWebhook] = useState('');
   const [integrationMsg, setIntegrationMsg] = useState('');
-  const [tab, setTab] = useState<'boards' | 'members' | 'activity' | 'integrations'>('boards');
+  const [tab, setTab] = useState<'boards' | 'members' | 'activity' | 'integrations' | 'billing'>('boards');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [plans, setPlans] = useState<import('../types/enterprise').Plan[]>([]);
+  const [subscription, setSubscription] = useState<import('../types/enterprise').Subscription | null>(null);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
+  const [upgrading, setUpgrading] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token || !id) return;
+    setLoading(true);
+    if (tab === 'billing') {
+      Promise.all([api.getPlans(), api.getSubscription(token, id)])
+        .then(([p, s]) => { setPlans(p); setSubscription(s); })
+        .catch(() => setError('Failed to load billing'))
+        .finally(() => setLoading(false));
+      return;
+    }
     Promise.all([
       api.getWorkspace(token, id),
       api.getWorkspaceBoards(token, id),
@@ -43,7 +55,20 @@ export default function WorkspacePage() {
       })
       .catch(() => setError('Failed to load workspace'))
       .finally(() => setLoading(false));
-  }, [token, id]);
+  }, [token, id, tab]);
+
+  const handleUpgrade = async (planSlug: string) => {
+    if (!token || !id || planSlug === 'free' || planSlug === 'enterprise') return;
+    setUpgrading(planSlug);
+    try {
+      const { url } = await api.createCheckout(token, id, planSlug, billingCycle);
+      if (url) window.location.href = url;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Checkout unavailable — configure Stripe keys');
+    } finally {
+      setUpgrading(null);
+    }
+  };
 
   const handleCreateBoard = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,12 +130,12 @@ export default function WorkspacePage() {
           </div>
         </div>
 
-        <div className="flex gap-1 mb-6 border-b border-[#2e3348]">
-          {(['boards', 'members', 'activity', 'integrations'] as const).map((t) => (
+        <div className="flex gap-1 mb-6 border-b border-[#2e3348] overflow-x-auto">
+          {(['boards', 'members', 'activity', 'integrations', 'billing'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-4 py-2 text-sm font-medium capitalize border-b-2 transition-colors ${
+              className={`px-4 py-2 text-sm font-medium capitalize border-b-2 transition-colors whitespace-nowrap ${
                 tab === t ? 'border-indigo-500 text-white' : 'border-transparent text-gray-400 hover:text-white'
               }`}
             >
@@ -255,6 +280,76 @@ export default function WorkspacePage() {
               </button>
             </div>
             {integrationMsg && <p className="text-sm text-green-400">{integrationMsg}</p>}
+          </div>
+        )}
+
+        {tab === 'billing' && canAdmin && (
+          <div className="space-y-6">
+            {subscription && (
+              <div className="p-4 rounded-xl bg-[#1a1d27] border border-[#2e3348]">
+                <p className="text-sm text-gray-500">Current plan</p>
+                <p className="text-xl font-bold capitalize">{subscription.planName}</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Status: {subscription.status}
+                  {subscription.trialEndsAt && (
+                    <> · Trial ends {new Date(subscription.trialEndsAt).toLocaleDateString()}</>
+                  )}
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => setBillingCycle('monthly')}
+                className={`px-3 py-1.5 rounded-lg text-sm ${billingCycle === 'monthly' ? 'bg-indigo-600' : 'bg-white/5'}`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setBillingCycle('annual')}
+                className={`px-3 py-1.5 rounded-lg text-sm ${billingCycle === 'annual' ? 'bg-indigo-600' : 'bg-white/5'}`}
+              >
+                Annual (save ~17%)
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {plans.map((plan) => {
+                const isCurrent = subscription?.planSlug === plan.slug;
+                const price = billingCycle === 'annual' ? plan.priceAnnual : plan.priceMonthly;
+                return (
+                  <div
+                    key={plan.slug}
+                    className={`p-5 rounded-xl border ${isCurrent ? 'border-indigo-500 bg-indigo-950/20' : 'border-[#2e3348] bg-[#1a1d27]'}`}
+                  >
+                    <h3 className="font-bold text-lg">{plan.name}</h3>
+                    <p className="text-sm text-gray-500 mt-1 mb-3">{plan.description}</p>
+                    <p className="text-2xl font-bold mb-4">
+                      {price === 0 ? 'Free' : `$${price}`}
+                      {price > 0 && <span className="text-sm font-normal text-gray-500">/{billingCycle === 'annual' ? 'yr' : 'mo'}</span>}
+                    </p>
+                    <ul className="text-xs text-gray-400 space-y-1 mb-4">
+                      {Object.entries(plan.limits).slice(0, 3).map(([k, v]) => (
+                        <li key={k}>· {k.replace(/_/g, ' ')}: {v === -1 ? 'Unlimited' : v}</li>
+                      ))}
+                    </ul>
+                    {isCurrent ? (
+                      <span className="text-sm text-indigo-400 font-medium">Current plan</span>
+                    ) : plan.slug === 'enterprise' ? (
+                      <a href="mailto:sales@example.com" className="text-sm text-indigo-400">Contact sales</a>
+                    ) : plan.slug !== 'free' ? (
+                      <button
+                        onClick={() => handleUpgrade(plan.slug)}
+                        disabled={upgrading === plan.slug}
+                        className="w-full py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm font-medium disabled:opacity-50"
+                      >
+                        {upgrading === plan.slug ? 'Redirecting...' : 'Upgrade'}
+                      </button>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 

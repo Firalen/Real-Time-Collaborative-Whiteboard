@@ -270,4 +270,72 @@ export const api = {
       token,
       body: JSON.stringify({}),
     }),
+
+  getPlans: () => request<import('../types/enterprise').Plan[]>('/api/billing/plans'),
+  getSubscription: (token: string, workspaceId: string) =>
+    request<import('../types/enterprise').Subscription>(`/api/billing/workspace/${workspaceId}`, { token }),
+  createCheckout: (token: string, workspaceId: string, planSlug: string, billingCycle = 'monthly') =>
+    request<{ url: string }>(`/api/billing/workspace/${workspaceId}/checkout`, {
+      method: 'POST',
+      token,
+      body: JSON.stringify({ planSlug, billingCycle }),
+    }),
+  aiMindMap: (token: string, workspaceId: string, data: { topic: string; boardId: string }) =>
+    request<{ nodes: unknown }>(`/api/workspaces/${workspaceId}/ai/mind-map`, {
+      method: 'POST', token, body: JSON.stringify(data),
+    }),
+  aiImage: (token: string, workspaceId: string, data: { prompt: string; boardId: string }) =>
+    request<{ url: string }>(`/api/workspaces/${workspaceId}/ai/image`, {
+      method: 'POST', token, body: JSON.stringify(data),
+    }),
+  getLayers: (token: string, boardId: string) =>
+    request<import('../types/enterprise').BoardLayer[]>(`/api/boards/${boardId}/layers`, { token }),
+  createLayer: (token: string, boardId: string, name: string) =>
+    request<import('../types/enterprise').BoardLayer>(`/api/boards/${boardId}/layers`, {
+      method: 'POST', token, body: JSON.stringify({ name }),
+    }),
+  updateLayer: (token: string, boardId: string, layerId: string, data: Partial<import('../types/enterprise').BoardLayer>) =>
+    request<import('../types/enterprise').BoardLayer>(`/api/boards/${boardId}/layers/${layerId}`, {
+      method: 'PATCH',
+      token,
+      body: JSON.stringify({ name: data.name, visible: data.visible, locked: data.locked, sortOrder: data.sortOrder }),
+    }),
+  uploadAsset: async (token: string, workspaceId: string, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    const API_URL = import.meta.env.VITE_API_URL || '';
+    const res = await fetch(`${API_URL}/api/workspaces/${workspaceId}/assets`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    });
+    if (!res.ok) throw new Error('Upload failed');
+    return res.json() as Promise<{ url: string }>;
+  },
+
+  getGallery: (params?: { category?: string; featured?: boolean }) => {
+    const q = new URLSearchParams();
+    if (params?.category) q.set('category', params.category);
+    if (params?.featured) q.set('featured', 'true');
+    const qs = q.toString();
+    return request<import('../types/enterprise').GalleryBoard[]>(`/api/gallery${qs ? `?${qs}` : ''}`);
+  },
+
+  likeGalleryBoard: (token: string, boardId: string) =>
+    request<{ liked: boolean }>(`/api/gallery/${boardId}/like`, { method: 'POST', token }),
+
+  getBillingUsage: (token: string, workspaceId: string) =>
+    request<{ boards: { used: number; limit: number }; ai_requests_monthly: { used: number; limit: number } }>(
+      `/api/billing/workspace/${workspaceId}/usage`,
+      { token },
+    ),
+
+  checkAdmin: (token: string) =>
+    request<{ isAdmin: boolean }>('/api/admin/check', { token }),
+
+  getAdminMetrics: (token: string) =>
+    request<import('../types/enterprise').AdminMetrics>('/api/admin/metrics', { token }),
+
+  getAdminWorkspaces: (token: string) =>
+    request<import('../types/enterprise').AdminWorkspace[]>('/api/admin/workspaces', { token }),
 };

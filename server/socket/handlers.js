@@ -12,6 +12,8 @@ const {
 } = require('./validation');
 
 const boardUsers = new Map();
+const socketByUser = new Map();
+const meetingUsers = new Map();
 const SAVE_INTERVAL_MS = 5000;
 const VERSION_INTERVAL_MS = 30000;
 const lastSaveBySocket = new Map();
@@ -62,6 +64,7 @@ function registerSocketHandlers(io) {
 
       currentBoardId = boardId;
       socket.join(boardId);
+      socketByUser.set(userId, socket.id);
 
       const userInfo = { userId, name: displayName, avatarColor };
       trackUser(boardId, userId, userInfo);
@@ -141,6 +144,40 @@ function registerSocketHandlers(io) {
       }
     });
 
+    socket.on('webrtc-join', () => {
+      if (!currentBoardId) return;
+      if (!meetingUsers.has(currentBoardId)) meetingUsers.set(currentBoardId, new Set());
+      const inMeeting = meetingUsers.get(currentBoardId);
+      const existing = Array.from(inMeeting)
+        .filter((id) => id !== userId)
+        .map((id) => {
+          const u = boardUsers.get(currentBoardId)?.get(id);
+          return { userId: id, name: u?.name || 'User' };
+        });
+      socket.emit('webrtc-existing-peers', { peers: existing });
+      inMeeting.add(userId);
+      socket.to(currentBoardId).emit('webrtc-peer-joined', { userId, name: displayName });
+    });
+
+    socket.on('webrtc-signal', ({ targetUserId, type, payload }) => {
+      if (!targetUserId || !type) return;
+      const targetSocket = socketByUser.get(targetUserId);
+      if (targetSocket) {
+        io.to(targetSocket).emit('webrtc-signal', {
+          fromUserId: userId,
+          fromName: displayName,
+          type,
+          payload,
+        });
+      }
+    });
+
+    socket.on('webrtc-leave', () => {
+      if (!currentBoardId) return;
+      meetingUsers.get(currentBoardId)?.delete(userId);
+      socket.to(currentBoardId).emit('webrtc-peer-left', { userId });
+    });
+
     socket.on('chat-message', async ({ content }) => {
       if (!currentBoardId || !tokenUser) return;
       if (!content?.trim()) return;
@@ -176,6 +213,8 @@ function registerSocketHandlers(io) {
 async function leaveBoard(socket, boardId, userId) {
   socket.leave(boardId);
   untrackUser(boardId, userId);
+  meetingUsers.get(boardId)?.delete(userId);
+  socket.to(boardId).emit('webrtc-peer-left', { userId });
   await redis.del(`cursor:${boardId}:${userId}`);
   socket.to(boardId).emit('user-left', { userId });
 }

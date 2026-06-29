@@ -5,6 +5,7 @@ const Folder = require('../models/Folder');
 const Board = require('../models/Board');
 const activity = require('../services/activity');
 const notifications = require('../services/notifications');
+const billing = require('../services/billing');
 const { sendInvitationEmail } = require('../services/email');
 const { authMiddleware } = require('../middleware/auth');
 const { requireWorkspaceRole } = require('../middleware/workspaceAuth');
@@ -35,6 +36,8 @@ router.post('/', async (req, res) => {
       ownerId: req.user.id,
       timezone,
     });
+
+    await billing.ensureFreeSubscription(workspace.id);
 
     await activity.log({
       workspaceId: workspace.id,

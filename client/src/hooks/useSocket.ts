@@ -160,6 +160,7 @@ export function useSocket({
     connectionStatus,
     cursors,
     onlineUsers,
+    socketRef,
     emitDraw,
     emitCursorMove,
     saveCanvas,

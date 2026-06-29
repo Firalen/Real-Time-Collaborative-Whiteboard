@@ -2,7 +2,9 @@ require('dotenv').config();
 const { Pool } = require('pg');
 const pool = require('./pool');
 const schemaV2 = require('./schema-v2');
+const schemaV3 = require('./schema-v3');
 const seedWorkspaces = require('./seed-workspaces');
+const seedPlans = require('./seed-plans');
 
 async function ensureDatabase() {
   const databaseUrl = process.env.DATABASE_URL;
@@ -63,6 +65,13 @@ async function migrateV2(client) {
   console.log('✓ Seeded personal workspaces for existing users');
 }
 
+async function migrateV3(client) {
+  await client.query(schemaV3);
+  console.log('✓ Migration v3 (enterprise schema)');
+  await client.query(seedPlans);
+  console.log('✓ Seeded subscription plans & feature flags');
+}
+
 async function migrate() {
   await ensureDatabase();
 
@@ -70,6 +79,7 @@ async function migrate() {
   try {
     await migrateV1(client);
     await migrateV2(client);
+    await migrateV3(client);
     console.log('All migrations completed successfully.');
   } finally {
     client.release();
