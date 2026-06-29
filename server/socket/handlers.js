@@ -2,24 +2,32 @@ const User = require('../models/User');
 const Board = require('../models/Board');
 const { verifySocketToken } = require('../middleware/auth');
 const redis = require('../redis');
+const {
+  isValidUUID,
+  validateDrawEvent,
+  validateCanvasData,
+  validateCursorMove,
+  sanitizeGuestName,
+} = require('./validation');
 
-// In-memory presence fallback when Redis set ops aren't available per-connection
 const boardUsers = new Map();
+const SAVE_INTERVAL_MS = 5000;
+const lastSaveBySocket = new Map();
 
 /**
  * Real-time sync handlers.
  *
  * Flow:
  * 1. Client connects with JWT token in handshake auth
- * 2. Client emits 'join-board' → server puts socket in room named boardId
- * 3. Draw events are relayed to everyone else in the room (not back to sender)
- * 4. Cursor positions stored in Redis with TTL for ephemeral presence
+ * 2. Client emits 'join-board' → server validates board exists, joins Socket.IO room
+ * 3. Draw events are validated and relayed to other users in the room
+ * 4. Canvas saves are rate-limited and payload-validated before persisting to PostgreSQL
  */
 function registerSocketHandlers(io) {
   io.on('connection', (socket) => {
     const tokenUser = verifySocketToken(socket.handshake.auth?.token);
     let currentBoardId = null;
-    let displayName = socket.handshake.auth?.guestName || 'Guest';
+    let displayName = sanitizeGuestName(socket.handshake.auth?.guestName);
     let userId = socket.handshake.auth?.guestId || socket.id;
     let avatarColor = '#6366f1';
 
@@ -34,7 +42,10 @@ function registerSocketHandlers(io) {
     }
 
     socket.on('join-board', async ({ boardId }) => {
-      if (!boardId) return;
+      if (!isValidUUID(boardId)) {
+        socket.emit('error', { message: 'Invalid board ID' });
+        return;
+      }
 
       const board = await Board.findById(boardId);
       if (!board) {
@@ -52,35 +63,33 @@ function registerSocketHandlers(io) {
       const userInfo = { userId, name: displayName, avatarColor };
       trackUser(boardId, userId, userInfo);
 
-      // Send existing canvas state to the joining client
       socket.emit('board-state', { canvasData: board.canvas_data });
-
-      // Notify others in the room
       socket.to(boardId).emit('user-joined', userInfo);
-
-      // Send current online users to the joiner
-      const onlineUsers = getOnlineUsers(boardId);
-      socket.emit('online-users', onlineUsers);
+      socket.emit('online-users', getOnlineUsers(boardId));
     });
 
-    // Relay draw events to all other users in the board room
     socket.on('draw', (data) => {
       if (!currentBoardId) return;
-      socket.to(currentBoardId).emit('user-drew', {
-        ...data,
-        userId,
-      });
+      if (!validateDrawEvent(data)) return;
+
+      socket.to(currentBoardId).emit('user-drew', { ...data, userId });
     });
 
-    // Broadcast cursor position to other users
-    socket.on('cursor-move', async ({ x, y }) => {
-      if (!currentBoardId) return;
+    socket.on('cursor-move', async (data) => {
+      if (!currentBoardId || !validateCursorMove(data)) return;
 
-      const cursorData = { userId, name: displayName, avatarColor, x, y };
+      const cursorData = {
+        userId,
+        name: displayName,
+        avatarColor,
+        x: data.x,
+        y: data.y,
+      };
+
       await redis.setWithExpiry(
         `cursor:${currentBoardId}:${userId}`,
         JSON.stringify(cursorData),
-        30
+        30,
       );
 
       socket.to(currentBoardId).emit('cursor-update', cursorData);
@@ -88,10 +97,28 @@ function registerSocketHandlers(io) {
 
     socket.on('save-canvas', async ({ canvasData }) => {
       if (!currentBoardId) return;
-      await Board.updateCanvas(currentBoardId, canvasData);
+      if (!validateCanvasData(canvasData)) {
+        socket.emit('error', { message: 'Invalid canvas data' });
+        return;
+      }
+
+      const now = Date.now();
+      const lastSave = lastSaveBySocket.get(socket.id) || 0;
+      if (now - lastSave < SAVE_INTERVAL_MS) return;
+
+      lastSaveBySocket.set(socket.id, now);
+
+      try {
+        await Board.updateCanvas(currentBoardId, canvasData);
+        socket.emit('canvas-saved', { savedAt: new Date().toISOString() });
+      } catch (err) {
+        console.error('Canvas save error:', err.message);
+        socket.emit('error', { message: 'Failed to save canvas' });
+      }
     });
 
     socket.on('disconnect', async () => {
+      lastSaveBySocket.delete(socket.id);
       if (currentBoardId) {
         await leaveBoard(socket, currentBoardId, userId);
       }
