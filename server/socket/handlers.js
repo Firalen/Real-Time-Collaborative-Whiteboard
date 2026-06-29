@@ -1,7 +1,6 @@
 const User = require('../models/User');
 const Board = require('../models/Board');
 const activity = require('../services/activity');
-const activity = require('../services/activity');
 const { verifySocketToken } = require('../middleware/auth');
 const redis = require('../redis');
 const {
@@ -129,11 +128,40 @@ function registerSocketHandlers(io) {
           metadata: { via: 'socket' },
         });
 
+        const board = await Board.findById(currentBoardId);
+        if (board?.workspace_id) {
+          const { notifySlack } = require('../services/integrations');
+          await notifySlack(board.workspace_id, `Board "${board.name}" was updated`);
+        }
+
         socket.emit('canvas-saved', { savedAt: new Date().toISOString() });
       } catch (err) {
         console.error('Canvas save error:', err.message);
         socket.emit('error', { message: 'Failed to save canvas' });
       }
+    });
+
+    socket.on('chat-message', async ({ content }) => {
+      if (!currentBoardId || !tokenUser) return;
+      if (!content?.trim()) return;
+
+      const Chat = require('../models/Chat');
+      const message = await Chat.create({
+        boardId: currentBoardId,
+        userId,
+        content: content.trim(),
+      });
+
+      const user = await User.findById(userId);
+      socket.to(currentBoardId).emit('chat-message', {
+        id: message.id,
+        boardId: currentBoardId,
+        userId,
+        userName: user?.name || displayName,
+        avatarColor: user?.avatar_color || avatarColor,
+        content: message.content,
+        createdAt: message.created_at,
+      });
     });
 
     socket.on('disconnect', async () => {

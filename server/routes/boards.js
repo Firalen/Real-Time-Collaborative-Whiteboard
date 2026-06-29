@@ -1,8 +1,8 @@
 const express = require('express');
 const Board = require('../models/Board');
 const activity = require('../services/activity');
-const { authMiddleware } = require('../middleware/auth');
-const { optionalAuth } = require('../middleware/auth');
+const { notifySlack } = require('../services/integrations');
+const { authMiddleware, optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -37,14 +37,54 @@ router.get('/:id', optionalAuth, async (req, res) => {
     const board = await Board.findById(req.params.id);
     if (!board) return res.status(404).json({ error: 'Board not found' });
 
+    const hasPassword = !!board.password_hash;
+    const isPublic = board.visibility === 'public';
+
     res.json({
       ...formatBoard(board),
-      canvasData: board.canvas_data,
+      hasPassword,
+      canvasData: hasPassword && !req.user ? undefined : board.canvas_data,
       allowGuestView: board.allow_guest_view,
       allowExport: board.allow_export,
+      isViewOnly: isPublic && !req.user,
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch board' });
+  }
+});
+
+router.post('/:id/verify-password', async (req, res) => {
+  try {
+    const valid = await Board.verifyPassword(req.params.id, req.body.password);
+    if (!valid) return res.status(401).json({ error: 'Incorrect password' });
+    const board = await Board.findById(req.params.id);
+    res.json({ ok: true, canvasData: board?.canvas_data });
+  } catch (err) {
+    res.status(500).json({ error: 'Verification failed' });
+  }
+});
+
+router.patch('/:id/sharing', authMiddleware, async (req, res) => {
+  try {
+    const board = await Board.updateSharing(req.params.id, req.user.id, {
+      visibility: req.body.visibility,
+      allowGuestView: req.body.allowGuestView,
+      allowExport: req.body.allowExport,
+      password: req.body.password,
+    });
+    if (!board) return res.status(404).json({ error: 'Board not found or not authorized' });
+    res.json({ ...formatBoard(board), hasPassword: !!board.password_hash });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update sharing settings' });
+  }
+});
+
+router.post('/:id/watch', authMiddleware, async (req, res) => {
+  try {
+    const watching = await Board.toggleWatch(req.user.id, req.params.id);
+    res.json({ watching });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to toggle watch' });
   }
 });
 
@@ -129,7 +169,13 @@ router.post('/:id/versions/:versionId/restore', authMiddleware, async (req, res)
       return res.status(404).json({ error: 'Version not found' });
     }
     const result = await Board.updateCanvas(req.params.id, version.canvas_data);
-    res.json({ updatedAt: result.updated_at });
+    await activity.log({
+      boardId: req.params.id,
+      userId: req.user.id,
+      action: 'version.restored',
+      metadata: { versionId: req.params.versionId },
+    });
+    res.json({ updatedAt: result.updated_at, canvasData: version.canvas_data });
   } catch (err) {
     res.status(500).json({ error: 'Failed to restore version' });
   }

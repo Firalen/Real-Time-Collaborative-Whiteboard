@@ -19,7 +19,9 @@ export default function WorkspacePage() {
   const [newBoardName, setNewBoardName] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState('blank');
   const [inviteEmail, setInviteEmail] = useState('');
-  const [tab, setTab] = useState<'boards' | 'members' | 'activity'>('boards');
+  const [slackWebhook, setSlackWebhook] = useState('');
+  const [integrationMsg, setIntegrationMsg] = useState('');
+  const [tab, setTab] = useState<'boards' | 'members' | 'activity' | 'integrations'>('boards');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -104,7 +106,7 @@ export default function WorkspacePage() {
         </div>
 
         <div className="flex gap-1 mb-6 border-b border-[#2e3348]">
-          {(['boards', 'members', 'activity'] as const).map((t) => (
+          {(['boards', 'members', 'activity', 'integrations'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -212,6 +214,47 @@ export default function WorkspacePage() {
                 </button>
               </form>
             )}
+          </div>
+        )}
+
+        {tab === 'integrations' && canAdmin && (
+          <div className="space-y-6 max-w-lg">
+            <div className="p-4 rounded-xl bg-[#1a1d27] border border-[#2e3348]">
+              <h3 className="font-semibold mb-2">Slack</h3>
+              <p className="text-sm text-gray-400 mb-3">Post to a channel when boards are updated or comments are added.</p>
+              <input
+                type="url"
+                value={slackWebhook}
+                onChange={(e) => setSlackWebhook(e.target.value)}
+                placeholder="https://hooks.slack.com/services/..."
+                className="w-full px-3 py-2 rounded-lg bg-[#0f1117] border border-[#2e3348] mb-2"
+              />
+              <button
+                className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm"
+                onClick={async () => {
+                  if (!token || !id) return;
+                  await api.saveSlackIntegration(token, id, slackWebhook);
+                  setIntegrationMsg('Slack connected');
+                }}
+              >
+                Save Slack webhook
+              </button>
+            </div>
+            <div className="p-4 rounded-xl bg-[#1a1d27] border border-[#2e3348]">
+              <h3 className="font-semibold mb-2">Google Calendar</h3>
+              <p className="text-sm text-gray-400 mb-3">Add task due dates to Google Calendar from the Tasks panel.</p>
+              <button
+                className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm"
+                onClick={async () => {
+                  if (!token || !id) return;
+                  await api.enableGoogleCalendar(token, id);
+                  setIntegrationMsg('Google Calendar enabled for tasks');
+                }}
+              >
+                Enable Google Calendar
+              </button>
+            </div>
+            {integrationMsg && <p className="text-sm text-green-400">{integrationMsg}</p>}
           </div>
         )}
 

@@ -14,13 +14,10 @@ const boardRoutes = require('./routes/boards');
 const workspaceRoutes = require('./routes/workspaces');
 const invitationRoutes = require('./routes/invitations');
 const commentRoutes = require('./routes/comments');
+const chatRoutes = require('./routes/chat');
 const taskRoutes = require('./routes/tasks');
 const notificationRoutes = require('./routes/notifications');
-const workspaceRoutes = require('./routes/workspaces');
-const invitationRoutes = require('./routes/invitations');
-const commentRoutes = require('./routes/comments');
-const taskRoutes = require('./routes/tasks');
-const notificationRoutes = require('./routes/notifications');
+const integrationRoutes = require('./routes/integrations');
 const { authLimiter, apiLimiter } = require('./middleware/rateLimiter');
 const errorHandler = require('./middleware/errorHandler');
 const { registerSocketHandlers } = require('./socket/handlers');
@@ -79,10 +76,13 @@ app.use('/api/workspaces', workspaceRoutes);
 app.use('/api/invitations', invitationRoutes);
 app.use('/api/boards', boardRoutes);
 app.use('/api/boards/:boardId/comments', commentRoutes);
+app.use('/api/boards/:boardId/chat', chatRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/workspaces/:workspaceId/integrations', integrationRoutes);
 
 registerSocketHandlers(io);
+app.set('io', io);
 
 app.use(errorHandler);
 

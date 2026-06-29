@@ -12,6 +12,13 @@ import {
 import type { Tool, DrawEvent } from '../types';
 import { HistoryManager, AddObjectCommand, FinalizeAddCommand } from '../utils/commands';
 
+function assignElementId(obj: FabricObject) {
+  if (!obj.get('elementId')) {
+    obj.set('elementId', crypto.randomUUID());
+  }
+  return obj.get('elementId') as string;
+}
+
 function serializeObject(obj: FabricObject): Record<string, unknown> {
   return obj.toObject() as unknown as Record<string, unknown>;
 }
@@ -22,6 +29,8 @@ interface UseCanvasOptions {
   tool: Tool;
   onDraw?: (event: DrawEvent) => void;
   onHistoryChange?: () => void;
+  onSelectionChange?: (elementId: string | null) => void;
+  viewOnly?: boolean;
 }
 
 export function useCanvas(
@@ -67,6 +76,7 @@ export function useCanvas(
       const path = e.path;
       if (!path) return;
 
+      assignElementId(path);
       const cmd = new AddObjectCommand(canvas, path);
       historyRef.current.execute(cmd);
       optionsRef.current.onHistoryChange?.();
@@ -82,6 +92,7 @@ export function useCanvas(
       if (e.target?.type === 'path') return;
       const obj = e.target;
       if (!obj || obj.get('isRemote')) return;
+      assignElementId(obj);
 
       optionsRef.current.onDraw?.({
         type: 'object-added',
@@ -89,8 +100,21 @@ export function useCanvas(
       });
     });
 
+    const onSelection = () => {
+      const active = canvas.getActiveObject();
+      const id = active ? (active.get('elementId') as string) || assignElementId(active) : null;
+      optionsRef.current.onSelectionChange?.(id);
+    };
+
+    canvas.on('selection:created', onSelection);
+    canvas.on('selection:updated', onSelection);
+    canvas.on('selection:cleared', () => optionsRef.current.onSelectionChange?.(null));
+
     return () => {
       window.removeEventListener('resize', handleResize);
+      canvas.off('selection:created', onSelection);
+      canvas.off('selection:updated', onSelection);
+      canvas.off('selection:cleared');
       canvas.dispose();
       canvasRef.current = null;
     };
@@ -101,8 +125,16 @@ export function useCanvas(
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const { tool, color, strokeWidth } = options;
+    const { tool, color, strokeWidth, viewOnly } = options;
 
+    if (viewOnly) {
+      canvas.isDrawingMode = false;
+      canvas.selection = false;
+      canvas.forEachObject((obj) => { obj.selectable = false; });
+      return;
+    }
+
+    canvas.forEachObject((obj) => { obj.selectable = true; });
     canvas.isDrawingMode = tool === 'pen' || tool === 'eraser';
     canvas.selection = tool === 'select';
 
@@ -110,7 +142,7 @@ export function useCanvas(
       canvas.freeDrawingBrush.color = tool === 'eraser' ? '#ffffff' : color;
       canvas.freeDrawingBrush.width = tool === 'eraser' ? strokeWidth * 3 : strokeWidth;
     }
-  }, [options.tool, options.color, options.strokeWidth]);
+  }, [options.tool, options.color, options.strokeWidth, options.viewOnly]);
 
   // Shape drawing with mouse events
   useEffect(() => {
@@ -343,6 +375,29 @@ export function useCanvas(
     return canvasRef.current?.toJSON() as Record<string, unknown> | undefined;
   }, []);
 
+  const applyTaskVisuals = useCallback((tasks: { elementId?: string; status: string }[]) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const doneIds = new Set(
+      tasks.filter((t) => t.elementId && t.status === 'done').map((t) => t.elementId!),
+    );
+
+    canvas.getObjects().forEach((obj) => {
+      const id = obj.get('elementId') as string | undefined;
+      if (!id) return;
+      const done = doneIds.has(id);
+      if (obj.type === 'i-text' || obj.type === 'text' || obj.type === 'textbox') {
+        obj.set({ linethrough: done, opacity: done ? 0.65 : 1 });
+      } else if (done) {
+        obj.set({ opacity: 0.5 });
+      } else {
+        obj.set({ opacity: 1 });
+      }
+    });
+    canvas.requestRenderAll();
+  }, []);
+
   return {
     canvasRef,
     undo,
@@ -357,5 +412,6 @@ export function useCanvas(
     applyRemoteClear,
     exportPNG,
     getCanvasData,
+    applyTaskVisuals,
   };
 }

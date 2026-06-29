@@ -39,6 +39,7 @@ export interface Task {
   id: string;
   boardId: string;
   boardName?: string;
+  elementId?: string;
   title: string;
   description?: string;
   assignedTo?: string;
@@ -57,4 +58,43 @@ export interface ActivityItem {
   avatarColor?: string;
   metadata: Record<string, unknown>;
   createdAt: string;
+}
+
+export interface Comment {
+  id: string;
+  boardId: string;
+  elementId?: string;
+  userId: string;
+  userName?: string;
+  avatarColor?: string;
+  parentId?: string;
+  content: string;
+  resolved: boolean;
+  mentions?: { id: string; name: string }[];
+  createdAt: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  boardId: string;
+  userId: string;
+  userName?: string;
+  avatarColor?: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface BoardVersion {
+  id: string;
+  label?: string;
+  created_by?: string;
+  created_at: string;
+}
+
+export interface BoardMeta {
+  hasPassword?: boolean;
+  allowGuestView?: boolean;
+  allowExport?: boolean;
+  isViewOnly?: boolean;
+  visibility?: string;
 }

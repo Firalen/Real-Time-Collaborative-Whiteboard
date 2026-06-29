@@ -1,4 +1,5 @@
 const pool = require('../db/pool');
+const bcrypt = require('bcrypt');
 const { BOARD_TEMPLATES } = require('../constants/roles');
 
 async function findById(id, { includeDeleted = false } = {}) {
@@ -203,6 +204,65 @@ async function remove(id, ownerId) {
   return softDelete(id, ownerId);
 }
 
+async function updateSharing(id, ownerId, { visibility, allowGuestView, allowExport, password }) {
+  const sets = ['updated_at = NOW()'];
+  const values = [];
+  let i = 1;
+
+  if (visibility !== undefined) {
+    sets.push(`visibility = $${i++}`);
+    values.push(visibility);
+  }
+  if (allowGuestView !== undefined) {
+    sets.push(`allow_guest_view = $${i++}`);
+    values.push(allowGuestView);
+  }
+  if (allowExport !== undefined) {
+    sets.push(`allow_export = $${i++}`);
+    values.push(allowExport);
+  }
+  if (password === '') {
+    sets.push('password_hash = NULL');
+  } else if (password) {
+    sets.push(`password_hash = $${i++}`);
+    values.push(await bcrypt.hash(password, 10));
+  }
+
+  values.push(id, ownerId);
+  const { rows } = await pool.query(
+    `UPDATE boards SET ${sets.join(', ')}
+     WHERE id = $${i++} AND owner_id = $${i} AND deleted_at IS NULL
+     RETURNING *`,
+    values,
+  );
+  return rows[0] || null;
+}
+
+async function verifyPassword(id, password) {
+  const board = await findById(id);
+  if (!board?.password_hash) return true;
+  return bcrypt.compare(password, board.password_hash);
+}
+
+async function toggleWatch(userId, boardId) {
+  const { rows } = await pool.query(
+    'SELECT 1 FROM board_watchers WHERE user_id = $1 AND board_id = $2',
+    [userId, boardId],
+  );
+  if (rows.length > 0) {
+    await pool.query(
+      'DELETE FROM board_watchers WHERE user_id = $1 AND board_id = $2',
+      [userId, boardId],
+    );
+    return false;
+  }
+  await pool.query(
+    'INSERT INTO board_watchers (user_id, board_id) VALUES ($1, $2)',
+    [userId, boardId],
+  );
+  return true;
+}
+
 async function togglePin(userId, boardId) {
   const { rows: pinned } = await pool.query(
     'SELECT 1 FROM user_board_pins WHERE user_id = $1 AND board_id = $2',
@@ -240,4 +300,7 @@ module.exports = {
   restore,
   remove,
   togglePin,
+  updateSharing,
+  verifyPassword,
+  toggleWatch,
 };

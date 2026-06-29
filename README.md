@@ -16,14 +16,46 @@ A multi-user drawing app with live cursors, real-time sync, and board management
 
 ## Features
 
+### Core whiteboard
 - **Drawing tools**: pen, rectangle, circle, line, eraser, text, sticky notes
 - **Undo / redo** via command pattern
 - **Real-time sync** across multiple users via Socket.IO rooms
 - **Live cursors** with user avatars
-- **Auth**: register, login, JWT sessions
-- **Boards**: create, rename, delete, share via link
 - **Export** board as PNG
 - **Auto-save** canvas to PostgreSQL
+
+### Workspaces & collaboration
+- **Workspaces** with roles (owner, admin, editor, viewer)
+- **Member invitations** via email link
+- **Board folders**, templates, pin/archive
+- **Board sidebar**: Share, Chat, Comments, Tasks, Activity, Version history
+
+### Comments & notifications
+- **Threaded comments** on boards and canvas elements
+- **@mentions** with in-app notifications
+- **Real-time comment** updates via Socket.IO
+
+### Tasks
+- **Task cards** with assignee, due date, priority
+- **My Tasks** page across all boards
+- **Canvas-linked tasks** — select an element, create a task; completed tasks strike through on canvas
+- **Google Calendar** links for due dates
+
+### Sharing & access
+- **Visibility**: private, workspace, public (view-only)
+- **Password-protected** boards
+- **Guest view** and export toggles
+
+### Integrations
+- **Slack** webhook notifications (board saves, new comments)
+- **Google Calendar** URL generation for tasks
+
+### Activity & history
+- **Activity feed** per workspace and board
+- **Version snapshots** with one-click restore
+
+### Auth
+- Register, login, JWT sessions
 
 ## Local Development
 
@@ -91,14 +123,15 @@ Open http://localhost:5173
 ```
 ├── client/          React + TypeScript frontend
 │   └── src/
-│       ├── components/   Canvas, Toolbar, Cursors, Sidebar
-│       ├── hooks/        useSocket, useCanvas
-│       ├── pages/        Home, Board, Login
+│       ├── components/   Canvas, Toolbar, BoardSidebar, Cursors
+│       ├── hooks/        useSocket, useCanvas, useBoardCollaboration
+│       ├── pages/        Home, Workspace, Board, MyTasks, Login, Invite
 │       └── context/      AuthContext
 ├── server/          Express + Socket.IO backend
-│   ├── routes/      auth, boards
+│   ├── routes/      auth, boards, workspaces, comments, tasks, chat, integrations
+│   ├── services/    notifications, integrations
 │   ├── socket/      real-time handlers
-│   └── models/      User, Board
+│   └── models/      User, Board, Workspace, Comment, Task, Chat, Integration
 └── docker-compose.yml
 ```
 
@@ -113,6 +146,9 @@ Open http://localhost:5173
 | Server → Client | `cursor-update` | Relay cursor position |
 | Server → Client | `user-joined` | User joined notification |
 | Server → Client | `board-state` | Full canvas on join |
+| Server → Client | `comment-added` | New comment on board |
+| Server → Client | `chat-message` | New chat message |
+| Server → Client | `canvas-saved` | Auto-save confirmation |
 
 ## License
 

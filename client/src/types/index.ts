@@ -21,6 +21,10 @@ export interface Board {
   pinned?: boolean;
   createdAt: string;
   updatedAt: string;
+  allowGuestView?: boolean;
+  allowExport?: boolean;
+  isViewOnly?: boolean;
+  hasPassword?: boolean;
   canvasData?: Record<string, unknown>;
 }
 

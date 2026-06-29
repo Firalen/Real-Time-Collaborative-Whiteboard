@@ -1,5 +1,7 @@
 const express = require('express');
 const Comment = require('../models/Comment');
+const Board = require('../models/Board');
+const { notifySlack } = require('../services/integrations');
 const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router({ mergeParams: true });
@@ -29,7 +31,22 @@ router.post('/', async (req, res) => {
       mentionIds: mentionIds || [],
     });
 
-    res.status(201).json(formatComment(comment));
+    const formatted = formatComment({
+      ...comment,
+      user_name: req.user.name || req.user.email,
+      avatar_color: '#6366f1',
+    });
+    const io = req.app.get('io');
+    if (io) {
+      io.to(req.params.boardId).emit('comment-added', formatted);
+    }
+
+    const board = await Board.findById(req.params.boardId);
+    if (board?.workspace_id) {
+      await notifySlack(board.workspace_id, `New comment on board "${board.name}": ${content.slice(0, 100)}`);
+    }
+
+    res.status(201).json(formatted);
   } catch (err) {
     res.status(500).json({ error: 'Failed to create comment' });
   }

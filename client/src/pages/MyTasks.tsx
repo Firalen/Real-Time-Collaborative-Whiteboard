@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
 import AppLayout from '../components/AppLayout';
+import { googleCalendarUrl } from '../utils/calendar';
 import type { Task } from '../types/saas';
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -64,9 +65,19 @@ export default function MyTasks() {
                     </Link>
                   )}
                   {task.dueDate && (
-                    <span className="text-xs text-gray-500">
-                      Due {new Date(task.dueDate).toLocaleDateString()}
-                    </span>
+                    <>
+                      <span className="text-xs text-gray-500">
+                        Due {new Date(task.dueDate).toLocaleDateString()}
+                      </span>
+                      <a
+                        href={googleCalendarUrl(task.title, task.dueDate, task.description)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-indigo-400 hover:text-indigo-300"
+                      >
+                        Calendar
+                      </a>
+                    </>
                   )}
                   <span className={`text-xs capitalize ${PRIORITY_COLORS[task.priority]}`}>
                     {task.priority}

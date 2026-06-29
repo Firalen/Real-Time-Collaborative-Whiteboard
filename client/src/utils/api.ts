@@ -159,4 +159,115 @@ export const api = {
 
   markAllNotificationsRead: (token: string) =>
     request<void>('/api/notifications/read-all', { method: 'POST', token }),
+
+  // Comments
+  getComments: (token: string, boardId: string) =>
+    request<import('../types/saas').Comment[]>(`/api/boards/${boardId}/comments`, { token }),
+
+  postComment: (
+    token: string,
+    boardId: string,
+    data: { content: string; elementId?: string; parentId?: string; mentionIds?: string[] },
+  ) =>
+    request<import('../types/saas').Comment>(`/api/boards/${boardId}/comments`, {
+      method: 'POST',
+      token,
+      body: JSON.stringify(data),
+    }),
+
+  resolveComment: (token: string, boardId: string, commentId: string) =>
+    request<{ resolved: boolean }>(`/api/boards/${boardId}/comments/${commentId}/resolve`, {
+      method: 'POST',
+      token,
+    }),
+
+  addReaction: (token: string, boardId: string, elementId: string, emoji: string) =>
+    request<unknown>(`/api/boards/${boardId}/comments/reactions`, {
+      method: 'POST',
+      token,
+      body: JSON.stringify({ elementId, emoji }),
+    }),
+
+  getReactions: (token: string, boardId: string) =>
+    request<unknown[]>(`/api/boards/${boardId}/comments/reactions`, { token }),
+
+  // Chat
+  getChat: (token: string, boardId: string) =>
+    request<import('../types/saas').ChatMessage[]>(`/api/boards/${boardId}/chat`, { token }),
+
+  sendChat: (token: string, boardId: string, content: string) =>
+    request<import('../types/saas').ChatMessage>(`/api/boards/${boardId}/chat`, {
+      method: 'POST',
+      token,
+      body: JSON.stringify({ content }),
+    }),
+
+  // Board tasks
+  getBoardTasks: (token: string, boardId: string) =>
+    request<Task[]>(`/api/tasks/board/${boardId}`, { token }),
+
+  createTask: (
+    token: string,
+    boardId: string,
+    data: Partial<Task> & { title: string; workspaceId?: string; elementId?: string },
+  ) =>
+    request<Task>(`/api/tasks/board/${boardId}`, {
+      method: 'POST',
+      token,
+      body: JSON.stringify(data),
+    }),
+
+  // Board sharing & history
+  verifyBoardPassword: (boardId: string, password: string) =>
+    request<{ ok: boolean; canvasData?: Record<string, unknown> }>(
+      `/api/boards/${boardId}/verify-password`,
+      { method: 'POST', body: JSON.stringify({ password }) },
+    ),
+
+  updateBoardSharing: (
+    token: string,
+    boardId: string,
+    data: { visibility?: string; allowGuestView?: boolean; allowExport?: boolean; password?: string },
+  ) =>
+    request<Board>(`/api/boards/${boardId}/sharing`, {
+      method: 'PATCH',
+      token,
+      body: JSON.stringify(data),
+    }),
+
+  watchBoard: (token: string, boardId: string) =>
+    request<{ watching: boolean }>(`/api/boards/${boardId}/watch`, { method: 'POST', token }),
+
+  getBoardActivity: (token: string, boardId: string) =>
+    request<ActivityItem[]>(`/api/boards/${boardId}/activity`, { token }),
+
+  getBoardVersions: (token: string, boardId: string) =>
+    request<import('../types/saas').BoardVersion[]>(`/api/boards/${boardId}/versions`, { token }),
+
+  restoreBoardVersion: (token: string, boardId: string, versionId: string) =>
+    request<{ updatedAt: string; canvasData: Record<string, unknown> }>(
+      `/api/boards/${boardId}/versions/${versionId}/restore`,
+      { method: 'POST', token },
+    ),
+
+  // Integrations
+  getIntegrations: (token: string, workspaceId: string) =>
+    request<{ type: string; enabled: boolean }[]>(
+      `/api/workspaces/${workspaceId}/integrations`,
+      { token },
+    ),
+
+  saveSlackIntegration: (token: string, workspaceId: string, webhookUrl: string) =>
+    request<{ type: string }>(`/api/workspaces/${workspaceId}/integrations/slack`, {
+      method: 'PUT',
+      token,
+      body: JSON.stringify({ webhookUrl }),
+    }),
+
+  enableGoogleCalendar: (token: string, workspaceId: string) =>
+    request<{ type: string }>(`/api/workspaces/${workspaceId}/integrations/google-calendar`, {
+      method: 'PUT',
+      token,
+      body: JSON.stringify({}),
+    }),
 };

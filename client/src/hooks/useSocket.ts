@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import type { CursorState, DrawEvent, OnlineUser } from '../types';
+import type { Comment, ChatMessage } from '../types/saas';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || '';
 
@@ -14,6 +15,9 @@ interface UseSocketOptions {
   onUserDrew?: (event: DrawEvent) => void;
   onCanvasSaved?: (savedAt: string) => void;
   onError?: (message: string) => void;
+  onCommentAdded?: (comment: Comment) => void;
+  onChatMessage?: (message: ChatMessage) => void;
+  viewOnly?: boolean;
 }
 
 export function useSocket({
@@ -24,6 +28,9 @@ export function useSocket({
   onUserDrew,
   onCanvasSaved,
   onError,
+  onCommentAdded,
+  onChatMessage,
+  viewOnly = false,
 }: UseSocketOptions) {
   const socketRef = useRef<Socket | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
@@ -34,10 +41,14 @@ export function useSocket({
   const onUserDrewRef = useRef(onUserDrew);
   const onCanvasSavedRef = useRef(onCanvasSaved);
   const onErrorRef = useRef(onError);
+  const onCommentRef = useRef(onCommentAdded);
+  const onChatRef = useRef(onChatMessage);
   onBoardStateRef.current = onBoardState;
   onUserDrewRef.current = onUserDrew;
   onCanvasSavedRef.current = onCanvasSaved;
   onErrorRef.current = onError;
+  onCommentRef.current = onCommentAdded;
+  onChatRef.current = onChatMessage;
 
   useEffect(() => {
     const guestId = crypto.randomUUID();
@@ -86,6 +97,14 @@ export function useSocket({
       onCanvasSavedRef.current?.(savedAt);
     });
 
+    socket.on('comment-added', (comment: Comment) => {
+      onCommentRef.current?.(comment);
+    });
+
+    socket.on('chat-message', (message: ChatMessage) => {
+      onChatRef.current?.(message);
+    });
+
     socket.on('cursor-update', (data: CursorState) => {
       setCursors((prev) => {
         const next = new Map(prev);
@@ -132,6 +151,10 @@ export function useSocket({
     socketRef.current?.emit('save-canvas', { canvasData });
   }, []);
 
+  const emitChat = useCallback((content: string) => {
+    socketRef.current?.emit('chat-message', { content });
+  }, []);
+
   return {
     connected: connectionStatus === 'connected',
     connectionStatus,
@@ -140,5 +163,7 @@ export function useSocket({
     emitDraw,
     emitCursorMove,
     saveCanvas,
+    emitChat,
+    viewOnly,
   };
 }
