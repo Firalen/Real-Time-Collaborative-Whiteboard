@@ -1,5 +1,7 @@
 const User = require('../models/User');
 const Board = require('../models/Board');
+const activity = require('../services/activity');
+const activity = require('../services/activity');
 const { verifySocketToken } = require('../middleware/auth');
 const redis = require('../redis');
 const {
@@ -12,7 +14,9 @@ const {
 
 const boardUsers = new Map();
 const SAVE_INTERVAL_MS = 5000;
+const VERSION_INTERVAL_MS = 30000;
 const lastSaveBySocket = new Map();
+const lastVersionByBoard = new Map();
 
 /**
  * Real-time sync handlers.
@@ -110,6 +114,21 @@ function registerSocketHandlers(io) {
 
       try {
         await Board.updateCanvas(currentBoardId, canvasData);
+
+        // Version snapshot every 30 seconds per board
+        const lastVersion = lastVersionByBoard.get(currentBoardId) || 0;
+        if (now - lastVersion >= VERSION_INTERVAL_MS) {
+          await Board.saveVersion(currentBoardId, canvasData, userId, null);
+          lastVersionByBoard.set(currentBoardId, now);
+        }
+
+        await activity.log({
+          boardId: currentBoardId,
+          userId,
+          action: 'canvas.saved',
+          metadata: { via: 'socket' },
+        });
+
         socket.emit('canvas-saved', { savedAt: new Date().toISOString() });
       } catch (err) {
         console.error('Canvas save error:', err.message);

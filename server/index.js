@@ -11,6 +11,16 @@ const pool = require('./db/pool');
 const { connectRedis } = require('./redis');
 const authRoutes = require('./routes/auth');
 const boardRoutes = require('./routes/boards');
+const workspaceRoutes = require('./routes/workspaces');
+const invitationRoutes = require('./routes/invitations');
+const commentRoutes = require('./routes/comments');
+const taskRoutes = require('./routes/tasks');
+const notificationRoutes = require('./routes/notifications');
+const workspaceRoutes = require('./routes/workspaces');
+const invitationRoutes = require('./routes/invitations');
+const commentRoutes = require('./routes/comments');
+const taskRoutes = require('./routes/tasks');
+const notificationRoutes = require('./routes/notifications');
 const { authLimiter, apiLimiter } = require('./middleware/rateLimiter');
 const errorHandler = require('./middleware/errorHandler');
 const { registerSocketHandlers } = require('./socket/handlers');
@@ -65,7 +75,12 @@ app.get('/health', async (_req, res) => {
 });
 
 app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/workspaces', workspaceRoutes);
+app.use('/api/invitations', invitationRoutes);
 app.use('/api/boards', boardRoutes);
+app.use('/api/boards/:boardId/comments', commentRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 registerSocketHandlers(io);
 
