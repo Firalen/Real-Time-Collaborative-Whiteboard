@@ -1,7 +1,39 @@
 require('dotenv').config();
+const { Pool } = require('pg');
 const pool = require('./pool');
 
+async function ensureDatabase() {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL is not set');
+  }
+
+  const url = new URL(databaseUrl);
+  const dbName = url.pathname.replace(/^\//, '');
+  url.pathname = '/postgres';
+
+  const adminPool = new Pool({
+    connectionString: url.toString(),
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  });
+
+  try {
+    const { rows } = await adminPool.query(
+      'SELECT 1 FROM pg_database WHERE datname = $1',
+      [dbName],
+    );
+    if (rows.length === 0) {
+      await adminPool.query(`CREATE DATABASE "${dbName}"`);
+      console.log(`Created database: ${dbName}`);
+    }
+  } finally {
+    await adminPool.end();
+  }
+}
+
 async function migrate() {
+  await ensureDatabase();
+
   const client = await pool.connect();
   try {
     await client.query(`
@@ -33,6 +65,6 @@ async function migrate() {
 }
 
 migrate().catch((err) => {
-  console.error('Migration failed:', err);
+  console.error('Migration failed:', err.message);
   process.exit(1);
 });
