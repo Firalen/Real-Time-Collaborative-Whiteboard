@@ -7,6 +7,7 @@
     "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "build": "npm run build --prefix client",
     "start": "npm start --prefix server",
+    "test": "npm test --prefix server",
     "db:migrate": "npm run db:migrate --prefix server"
   },
   "devDependencies": {
