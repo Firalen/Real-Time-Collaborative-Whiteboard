@@ -389,6 +389,14 @@ input {
   gap: 0.25rem;
 }
 
+.tools-primary .eraser-btn.active {
+  background: #dc2626;
+}
+
+.tools-primary {
+  flex-shrink: 0;
+}
+
 .toolbar-divider {
   width: 1px;
   height: 28px;

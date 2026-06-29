@@ -51,7 +51,7 @@ export default function Canvas({ boardId, board, viewOnly = false }: CanvasProps
 
   const {
     undo, redo, addText, addStickyNote, clearCanvas,
-    loadCanvasData, applyRemoteObject, applyRemoteClear,
+    loadCanvasData, applyRemoteObject, applyRemoteRemove, applyRemoteClear,
     exportPNG, getCanvasData, applyTaskVisuals, canUndo: checkUndo, canRedo: checkRedo,
   } = useCanvas(containerRef, {
     tool, color, strokeWidth, viewOnly,
@@ -72,6 +72,10 @@ export default function Canvas({ boardId, board, viewOnly = false }: CanvasProps
     onBoardState: (canvasData) => loadCanvasData(canvasData),
     onUserDrew: (event) => {
       if (event.type === 'canvas-clear') { applyRemoteClear(); return; }
+      if (event.type === 'object-removed' && event.object?.elementId) {
+        applyRemoteRemove(event.object.elementId as string);
+        return;
+      }
       if (event.object) applyRemoteObject(event.object);
     },
     onCanvasSaved: (savedAt) => setLastSaved(savedAt),

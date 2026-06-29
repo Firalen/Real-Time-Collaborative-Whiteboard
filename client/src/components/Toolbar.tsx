@@ -47,8 +47,23 @@ export default function Toolbar({
 }: ToolbarProps) {
   return (
     <div className="toolbar">
-      <div className="toolbar-section">
-        {TOOLS.map((t) => (
+      <div className="toolbar-section tools-primary">
+        {TOOLS.filter((t) => ['select', 'pen', 'eraser'].includes(t.id)).map((t) => (
+          <button
+            key={t.id}
+            className={`tool-btn ${tool === t.id ? 'active' : ''} ${t.id === 'eraser' ? 'eraser-btn' : ''}`}
+            onClick={() => onToolChange(t.id)}
+            title={`${t.label}${t.shortcut ? ` (${t.shortcut})` : ''}`}
+          >
+            {t.icon}
+          </button>
+        ))}
+      </div>
+
+      <div className="toolbar-divider" />
+
+      <div className="toolbar-section tools-shapes">
+        {TOOLS.filter((t) => ['rectangle', 'circle', 'line', 'text', 'sticky'].includes(t.id)).map((t) => (
           <button
             key={t.id}
             className={`tool-btn ${tool === t.id ? 'active' : ''}`}
@@ -62,6 +77,8 @@ export default function Toolbar({
 
       <div className="toolbar-divider" />
 
+      {tool !== 'eraser' && (
+        <>
       <div className="toolbar-section colors">
         {COLORS.map((c) => (
           <button
@@ -82,10 +99,12 @@ export default function Toolbar({
       </div>
 
       <div className="toolbar-divider" />
+        </>
+      )}
 
       <div className="toolbar-section">
         <label className="stroke-label">
-          Size
+          {tool === 'eraser' ? 'Eraser' : 'Size'}
           <input
             type="range"
             min={1}

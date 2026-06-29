@@ -8,9 +8,10 @@ import {
   IText,
   FabricObject,
   util,
+  Point,
 } from 'fabric';
 import type { Tool, DrawEvent } from '../types';
-import { HistoryManager, AddObjectCommand, FinalizeAddCommand } from '../utils/commands';
+import { HistoryManager, AddObjectCommand, FinalizeAddCommand, RemoveObjectCommand } from '../utils/commands';
 
 function assignElementId(obj: FabricObject) {
   if (!obj.get('elementId')) {
@@ -21,6 +22,17 @@ function assignElementId(obj: FabricObject) {
 
 function serializeObject(obj: FabricObject): Record<string, unknown> {
   return obj.toObject() as unknown as Record<string, unknown>;
+}
+
+function hitTestEraser(obj: FabricObject, pointer: Point, radius: number): boolean {
+  if (obj.containsPoint(pointer)) return true;
+  const bounds = obj.getBoundingRect();
+  return (
+    pointer.x >= bounds.left - radius
+    && pointer.x <= bounds.left + bounds.width + radius
+    && pointer.y >= bounds.top - radius
+    && pointer.y <= bounds.top + bounds.height + radius
+  );
 }
 
 interface UseCanvasOptions {
@@ -135,14 +147,70 @@ export function useCanvas(
     }
 
     canvas.forEachObject((obj) => { obj.selectable = true; });
-    canvas.isDrawingMode = tool === 'pen' || tool === 'eraser';
+    canvas.isDrawingMode = tool === 'pen';
     canvas.selection = tool === 'select';
+    canvas.defaultCursor = tool === 'eraser' ? 'cell' : 'default';
 
     if (canvas.freeDrawingBrush) {
-      canvas.freeDrawingBrush.color = tool === 'eraser' ? '#ffffff' : color;
-      canvas.freeDrawingBrush.width = tool === 'eraser' ? strokeWidth * 3 : strokeWidth;
+      canvas.freeDrawingBrush.color = color;
+      canvas.freeDrawingBrush.width = strokeWidth;
     }
   }, [options.tool, options.color, options.strokeWidth, options.viewOnly]);
+
+  // Eraser — removes objects under the cursor (not white paint)
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || options.tool !== 'eraser' || options.viewOnly) return;
+
+    let isErasing = false;
+    const erasedThisStroke = new Set<string>();
+
+    const eraseAt = (pointer: Point) => {
+      const radius = optionsRef.current.strokeWidth * 4;
+      const objects = [...canvas.getObjects()].reverse();
+
+      for (const obj of objects) {
+        if (!hitTestEraser(obj, pointer, radius)) continue;
+
+        const elementId = (obj.get('elementId') as string) || assignElementId(obj);
+        if (erasedThisStroke.has(elementId)) continue;
+
+        erasedThisStroke.add(elementId);
+        const cmd = new RemoveObjectCommand(canvas, obj);
+        historyRef.current.execute(cmd);
+        optionsRef.current.onHistoryChange?.();
+        optionsRef.current.onDraw?.({
+          type: 'object-removed',
+          object: { elementId },
+        });
+      }
+    };
+
+    const onMouseDown = (opt: { scenePoint: Point }) => {
+      isErasing = true;
+      erasedThisStroke.clear();
+      eraseAt(opt.scenePoint);
+    };
+
+    const onMouseMove = (opt: { scenePoint: Point }) => {
+      if (!isErasing) return;
+      eraseAt(opt.scenePoint);
+    };
+
+    const onMouseUp = () => {
+      isErasing = false;
+    };
+
+    canvas.on('mouse:down', onMouseDown);
+    canvas.on('mouse:move', onMouseMove);
+    canvas.on('mouse:up', onMouseUp);
+
+    return () => {
+      canvas.off('mouse:down', onMouseDown);
+      canvas.off('mouse:move', onMouseMove);
+      canvas.off('mouse:up', onMouseUp);
+    };
+  }, [options.tool, options.viewOnly, options.strokeWidth]);
 
   // Shape drawing with mouse events
   useEffect(() => {
@@ -349,6 +417,19 @@ export function useCanvas(
     isRemoteRef.current = false;
   }, []);
 
+  const applyRemoteRemove = useCallback((elementId: string) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    isRemoteRef.current = true;
+    const obj = canvas.getObjects().find((o) => o.get('elementId') === elementId);
+    if (obj) {
+      canvas.remove(obj);
+      canvas.requestRenderAll();
+    }
+    isRemoteRef.current = false;
+  }, []);
+
   const applyRemoteClear = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -409,6 +490,7 @@ export function useCanvas(
     clearCanvas,
     loadCanvasData,
     applyRemoteObject,
+    applyRemoteRemove,
     applyRemoteClear,
     exportPNG,
     getCanvasData,

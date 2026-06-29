@@ -23,6 +23,24 @@ export class AddObjectCommand implements Command {
   }
 }
 
+export class RemoveObjectCommand implements Command {
+  constructor(
+    private canvas: Canvas,
+    private object: FabricObject,
+  ) {}
+
+  execute() {
+    this.canvas.remove(this.object);
+    this.canvas.discardActiveObject();
+    this.canvas.requestRenderAll();
+  }
+
+  undo() {
+    this.canvas.add(this.object);
+    this.canvas.requestRenderAll();
+  }
+}
+
 export class FinalizeAddCommand implements Command {
   constructor(
     private canvas: Canvas,
