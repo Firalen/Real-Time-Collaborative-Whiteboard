@@ -11,6 +11,14 @@ export interface Board {
   id: string;
   name: string;
   ownerId: string;
+  workspaceId?: string;
+  folderId?: string;
+  template?: string;
+  emojiIcon?: string;
+  coverUrl?: string;
+  visibility?: string;
+  archivedAt?: string;
+  pinned?: boolean;
   createdAt: string;
   updatedAt: string;
   canvasData?: Record<string, unknown>;
