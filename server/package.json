@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
+    "test": "node --test __tests__/**/*.test.js",
     "db:migrate": "node db/migrate.js"
   },
   "engines": {
@@ -16,10 +17,11 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "express-rate-limit": "^7.5.1",
+    "helmet": "^8.2.0",
     "ioredis": "^5.4.2",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.13.1",
-    "socket.io": "^4.8.1",
-    "uuid": "^11.0.5"
+    "socket.io": "^4.8.1"
   }
 }
