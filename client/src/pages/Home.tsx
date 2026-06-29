@@ -10,6 +10,8 @@ export default function Home() {
   const [newBoardName, setNewBoardName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,6 +43,22 @@ export default function Home() {
       setBoards((prev) => prev.filter((b) => b.id !== id));
     } catch {
       setError('Failed to delete board');
+    }
+  };
+
+  const startRename = (board: Board) => {
+    setRenamingId(board.id);
+    setRenameValue(board.name);
+  };
+
+  const handleRename = async (id: string) => {
+    if (!token || !renameValue.trim()) return;
+    try {
+      const updated = await api.updateBoard(token, id, renameValue.trim());
+      setBoards((prev) => prev.map((b) => (b.id === id ? updated : b)));
+      setRenamingId(null);
+    } catch {
+      setError('Failed to rename board');
     }
   };
 
@@ -91,17 +109,41 @@ export default function Home() {
             <div className="board-grid">
               {boards.map((board) => (
                 <div key={board.id} className="board-card">
-                  <Link to={`/board/${board.id}`} className="board-card-link">
-                    <h3>{board.name}</h3>
-                    <p>Updated {new Date(board.updatedAt).toLocaleDateString()}</p>
-                  </Link>
-                  <button
-                    className="board-delete"
-                    onClick={() => handleDelete(board.id)}
-                    title="Delete board"
-                  >
-                    ×
-                  </button>
+                  {renamingId === board.id ? (
+                    <div className="board-rename-form">
+                      <input
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleRename(board.id);
+                          if (e.key === 'Escape') setRenamingId(null);
+                        }}
+                        autoFocus
+                      />
+                      <button onClick={() => handleRename(board.id)}>Save</button>
+                    </div>
+                  ) : (
+                    <Link to={`/board/${board.id}`} className="board-card-link">
+                      <h3>{board.name}</h3>
+                      <p>Updated {new Date(board.updatedAt).toLocaleDateString()}</p>
+                    </Link>
+                  )}
+                  <div className="board-actions">
+                    <button
+                      className="board-action-btn"
+                      onClick={() => startRename(board)}
+                      title="Rename board"
+                    >
+                      ✎
+                    </button>
+                    <button
+                      className="board-delete"
+                      onClick={() => handleDelete(board.id)}
+                      title="Delete board"
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

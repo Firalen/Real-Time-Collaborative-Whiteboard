@@ -10,19 +10,20 @@ interface ToolbarProps {
   onUndo: () => void;
   onRedo: () => void;
   onExport: () => void;
+  onClear: () => void;
   canUndo: boolean;
   canRedo: boolean;
 }
 
-const TOOLS: { id: Tool; label: string; icon: string }[] = [
-  { id: 'select', label: 'Select', icon: '↖' },
-  { id: 'pen', label: 'Pen', icon: '✏️' },
-  { id: 'rectangle', label: 'Rectangle', icon: '▭' },
-  { id: 'circle', label: 'Circle', icon: '○' },
-  { id: 'line', label: 'Line', icon: '╱' },
-  { id: 'eraser', label: 'Eraser', icon: '🧹' },
-  { id: 'text', label: 'Text', icon: 'T' },
-  { id: 'sticky', label: 'Sticky', icon: '📝' },
+const TOOLS: { id: Tool; label: string; icon: string; shortcut?: string }[] = [
+  { id: 'select', label: 'Select', icon: '↖', shortcut: 'V' },
+  { id: 'pen', label: 'Pen', icon: '✏️', shortcut: 'P' },
+  { id: 'rectangle', label: 'Rectangle', icon: '▭', shortcut: 'R' },
+  { id: 'circle', label: 'Circle', icon: '○', shortcut: 'C' },
+  { id: 'line', label: 'Line', icon: '╱', shortcut: 'L' },
+  { id: 'eraser', label: 'Eraser', icon: '🧹', shortcut: 'E' },
+  { id: 'text', label: 'Text', icon: 'T', shortcut: 'T' },
+  { id: 'sticky', label: 'Sticky', icon: '📝', shortcut: 'S' },
 ];
 
 const COLORS = [
@@ -40,6 +41,7 @@ export default function Toolbar({
   onUndo,
   onRedo,
   onExport,
+  onClear,
   canUndo,
   canRedo,
 }: ToolbarProps) {
@@ -51,7 +53,7 @@ export default function Toolbar({
             key={t.id}
             className={`tool-btn ${tool === t.id ? 'active' : ''}`}
             onClick={() => onToolChange(t.id)}
-            title={t.label}
+            title={`${t.label}${t.shortcut ? ` (${t.shortcut})` : ''}`}
           >
             {t.icon}
           </button>
@@ -98,14 +100,17 @@ export default function Toolbar({
       <div className="toolbar-divider" />
 
       <div className="toolbar-section">
-        <button className="tool-btn" onClick={onUndo} disabled={!canUndo} title="Undo">
+        <button className="tool-btn" onClick={onUndo} disabled={!canUndo} title="Undo (Ctrl+Z)">
           ↩
         </button>
-        <button className="tool-btn" onClick={onRedo} disabled={!canRedo} title="Redo">
+        <button className="tool-btn" onClick={onRedo} disabled={!canRedo} title="Redo (Ctrl+Y)">
           ↪
         </button>
         <button className="tool-btn" onClick={onExport} title="Export PNG">
           💾
+        </button>
+        <button className="tool-btn" onClick={onClear} title="Clear canvas">
+          🗑️
         </button>
       </div>
     </div>

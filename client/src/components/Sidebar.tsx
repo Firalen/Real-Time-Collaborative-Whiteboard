@@ -1,27 +1,48 @@
 import type { OnlineUser } from '../types';
+import type { ConnectionStatus } from '../hooks/useSocket';
 
 interface SidebarProps {
   boardName: string;
   onlineUsers: OnlineUser[];
-  connected: boolean;
+  connectionStatus: ConnectionStatus;
   shareUrl: string;
   onCopyLink: () => void;
   copied: boolean;
+  lastSaved: string | null;
 }
+
+const STATUS_LABELS: Record<ConnectionStatus, string> = {
+  connected: 'Connected',
+  disconnected: 'Disconnected',
+  reconnecting: 'Reconnecting...',
+};
 
 export default function Sidebar({
   boardName,
   onlineUsers,
-  connected,
+  connectionStatus,
   shareUrl,
   onCopyLink,
   copied,
+  lastSaved,
 }: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
         <h2>{boardName}</h2>
-        <span className={`status-dot ${connected ? 'online' : 'offline'}`} />
+        <span
+          className={`status-dot ${connectionStatus === 'connected' ? 'online' : connectionStatus === 'reconnecting' ? 'reconnecting' : 'offline'}`}
+          title={STATUS_LABELS[connectionStatus]}
+        />
+      </div>
+
+      <div className="sidebar-section">
+        <p className="connection-label">{STATUS_LABELS[connectionStatus]}</p>
+        {lastSaved && (
+          <p className="save-label">
+            Saved {new Date(lastSaved).toLocaleTimeString()}
+          </p>
+        )}
       </div>
 
       <div className="sidebar-section">

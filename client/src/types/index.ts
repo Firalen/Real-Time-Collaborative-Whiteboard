@@ -24,11 +24,11 @@ export interface CursorState {
   y: number;
 }
 
-export interface DrawEvent {
-  type: 'path' | 'object-added' | 'object-modified' | 'object-removed';
+export type DrawEvent = {
+  type: 'path' | 'object-added' | 'object-modified' | 'object-removed' | 'canvas-clear';
   object?: Record<string, unknown>;
   userId?: string;
-}
+};
 
 export interface OnlineUser {
   userId: string;

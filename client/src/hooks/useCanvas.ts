@@ -12,12 +12,16 @@ import {
 import type { Tool, DrawEvent } from '../types';
 import { HistoryManager, AddObjectCommand, FinalizeAddCommand } from '../utils/commands';
 
+function serializeObject(obj: FabricObject): Record<string, unknown> {
+  return obj.toObject() as unknown as Record<string, unknown>;
+}
+
 interface UseCanvasOptions {
   color: string;
   strokeWidth: number;
   tool: Tool;
   onDraw?: (event: DrawEvent) => void;
-  isRemoteUpdate?: boolean;
+  onHistoryChange?: () => void;
 }
 
 export function useCanvas(
@@ -65,10 +69,11 @@ export function useCanvas(
 
       const cmd = new AddObjectCommand(canvas, path);
       historyRef.current.execute(cmd);
+      optionsRef.current.onHistoryChange?.();
 
       optionsRef.current.onDraw?.({
         type: 'object-added',
-        object: path.toObject(['id']),
+        object: serializeObject(path),
       });
     });
 
@@ -80,7 +85,7 @@ export function useCanvas(
 
       optionsRef.current.onDraw?.({
         type: 'object-added',
-        object: obj.toObject(['id', 'isRemote']),
+        object: serializeObject(obj),
       });
     });
 
@@ -176,10 +181,11 @@ export function useCanvas(
       const shape = activeShapeRef.current;
       const cmd = new FinalizeAddCommand(canvas, shape);
       historyRef.current.execute(cmd);
+      optionsRef.current.onHistoryChange?.();
 
       optionsRef.current.onDraw?.({
         type: 'object-added',
-        object: shape.toObject(['id', 'isRemote']),
+        object: serializeObject(shape),
       });
 
       isDrawingRef.current = false;
@@ -212,6 +218,11 @@ export function useCanvas(
 
     const cmd = new AddObjectCommand(canvas, text);
     historyRef.current.execute(cmd);
+    optionsRef.current.onHistoryChange?.();
+    optionsRef.current.onDraw?.({
+      type: 'object-added',
+      object: serializeObject(text),
+    });
   }, []);
 
   const addStickyNote = useCallback((x: number, y: number) => {
@@ -241,16 +252,44 @@ export function useCanvas(
 
     historyRef.current.execute(new AddObjectCommand(canvas, bg));
     historyRef.current.execute(new AddObjectCommand(canvas, text));
+    optionsRef.current.onHistoryChange?.();
+    optionsRef.current.onDraw?.({
+      type: 'object-added',
+      object: serializeObject(bg),
+    });
+    optionsRef.current.onDraw?.({
+      type: 'object-added',
+      object: serializeObject(text),
+    });
+  }, []);
+
+  const clearCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    canvas.getObjects().forEach((obj) => canvas.remove(obj));
+    canvas.requestRenderAll();
+    historyRef.current.clear();
+    optionsRef.current.onHistoryChange?.();
+    optionsRef.current.onDraw?.({ type: 'canvas-clear' });
   }, []);
 
   const undo = useCallback(() => {
-    historyRef.current.undo();
-    canvasRef.current?.requestRenderAll();
+    const result = historyRef.current.undo();
+    if (result) {
+      canvasRef.current?.requestRenderAll();
+      optionsRef.current.onHistoryChange?.();
+    }
+    return result;
   }, []);
 
   const redo = useCallback(() => {
-    historyRef.current.redo();
-    canvasRef.current?.requestRenderAll();
+    const result = historyRef.current.redo();
+    if (result) {
+      canvasRef.current?.requestRenderAll();
+      optionsRef.current.onHistoryChange?.();
+    }
+    return result;
   }, []);
 
   const loadCanvasData = useCallback(async (data: Record<string, unknown>) => {
@@ -278,6 +317,17 @@ export function useCanvas(
     isRemoteRef.current = false;
   }, []);
 
+  const applyRemoteClear = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    isRemoteRef.current = true;
+    canvas.getObjects().forEach((obj) => canvas.remove(obj));
+    canvas.requestRenderAll();
+    historyRef.current.clear();
+    isRemoteRef.current = false;
+  }, []);
+
   const exportPNG = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -301,8 +351,10 @@ export function useCanvas(
     canRedo: () => historyRef.current.canRedo(),
     addText,
     addStickyNote,
+    clearCanvas,
     loadCanvasData,
     applyRemoteObject,
+    applyRemoteClear,
     exportPNG,
     getCanvasData,
   };
