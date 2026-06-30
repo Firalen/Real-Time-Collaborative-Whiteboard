@@ -37,15 +37,29 @@ const app = express();
 const server = http.createServer(app);
 
 const allowedOrigins = [
-  process.env.CLIENT_URL,
+  ...(process.env.CLIENT_URL || '').split(',').map((s) => s.trim()).filter(Boolean),
+  ...(process.env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean),
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:4173',
-].filter(Boolean);
+].filter((v, i, a) => a.indexOf(v) === i);
+
+function isOriginAllowed(origin) {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  // Vercel production + preview deploys (e.g. *.vercel.app)
+  if (process.env.ALLOW_VERCEL_PREVIEWS !== 'false' && /\.vercel\.app$/i.test(origin)) {
+    return true;
+  }
+  return false;
+}
 
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (isOriginAllowed(origin)) callback(null, true);
+      else callback(new Error('Not allowed by CORS'));
+    },
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -56,9 +70,10 @@ app.use(helmet({
 }));
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (isOriginAllowed(origin)) {
       callback(null, true);
     } else {
+      console.warn('CORS blocked origin:', origin, '| allowed:', allowedOrigins);
       callback(new Error('Not allowed by CORS'));
     }
   },

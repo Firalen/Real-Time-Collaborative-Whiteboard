@@ -3,6 +3,10 @@ import type { Workspace, WorkspaceMember, BoardTemplate, Notification, Task, Act
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
+if (import.meta.env.PROD && !API_URL) {
+  console.error('VITE_API_URL is not set — API calls will fail. Add it in Vercel env vars and redeploy.');
+}
+
 interface RequestOptions extends RequestInit {
   token?: string | null;
 }
@@ -10,14 +14,27 @@ interface RequestOptions extends RequestInit {
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { token, headers, ...rest } = options;
 
-  const res = await fetch(`${API_URL}${path}`, {
-    ...rest,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...headers,
-    },
-  });
+  if (!API_URL) {
+    throw new Error(
+      'API URL not configured. Set VITE_API_URL to your Render backend URL in Vercel and redeploy.',
+    );
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      ...rest,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...headers,
+      },
+    });
+  } catch {
+    throw new Error(
+      `Cannot reach the server at ${API_URL}. Check that Render is running and VITE_API_URL is correct.`,
+    );
+  }
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: 'Request failed' }));
