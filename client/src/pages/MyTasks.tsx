@@ -7,10 +7,10 @@ import { googleCalendarUrl } from '../utils/calendar';
 import type { Task } from '../types/saas';
 
 const PRIORITY_COLORS: Record<string, string> = {
-  low: 'text-gray-400',
-  medium: 'text-blue-400',
-  high: 'text-orange-400',
-  urgent: 'text-red-400',
+  low: 'var(--text-muted)',
+  medium: '#60a5fa',
+  high: '#fb923c',
+  urgent: '#f87171',
 };
 
 export default function MyTasks() {
@@ -33,53 +33,56 @@ export default function MyTasks() {
 
   return (
     <AppLayout>
-      <div className="max-w-3xl mx-auto px-4 py-10">
-        <h1 className="text-2xl font-bold mb-6">My Tasks</h1>
+      <div className="page-wrap">
+        <header className="page-header">
+          <span className="badge">Productivity</span>
+          <h1 className="page-title" style={{ marginTop: '0.5rem' }}>My Tasks</h1>
+          <p className="page-subtitle">Tasks assigned to you across all CollabBoard workspaces</p>
+        </header>
 
-        {loading && <p className="text-gray-500">Loading tasks...</p>}
+        {loading && <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '3rem' }}>Loading tasks...</p>}
 
         {!loading && tasks.length === 0 && (
-          <p className="text-gray-500 text-center py-16">No tasks assigned to you yet.</p>
+          <div className="glass-card" style={{ padding: '4rem', textAlign: 'center' }}>
+            <p style={{ color: 'var(--text-muted)' }}>No tasks assigned to you yet.</p>
+          </div>
         )}
 
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {tasks.map((task) => (
-            <div
-              key={task.id}
-              className="flex items-center gap-4 p-4 rounded-xl bg-[#1a1d27] border border-[#2e3348]"
-            >
+            <div key={task.id} className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 1.25rem' }}>
               <input
                 type="checkbox"
                 checked={task.status === 'done'}
                 onChange={(e) => handleStatusChange(task.id, e.target.checked ? 'done' : 'todo')}
-                className="w-4 h-4 rounded accent-indigo-500"
+                style={{ width: '1.1rem', height: '1.1rem', accentColor: '#8b5cf6', cursor: 'pointer' }}
               />
-              <div className="flex-1 min-w-0">
-                <p className={`font-medium ${task.status === 'done' ? 'line-through text-gray-500' : ''}`}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontWeight: 500, fontSize: '0.95rem', ...(task.status === 'done' ? { textDecoration: 'line-through', color: 'var(--text-muted)' } : {}) }}>
                   {task.title}
                 </p>
-                <div className="flex items-center gap-3 mt-1">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.35rem', flexWrap: 'wrap' }}>
                   {task.boardName && (
-                    <Link to={`/board/${task.boardId}`} className="text-xs text-indigo-400 hover:text-indigo-300">
+                    <Link to={`/board/${task.boardId}`} style={{ fontSize: '0.75rem', color: '#a78bfa', textDecoration: 'none' }}>
                       {task.emojiIcon} {task.boardName}
                     </Link>
                   )}
                   {task.dueDate && (
                     <>
-                      <span className="text-xs text-gray-500">
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                         Due {new Date(task.dueDate).toLocaleDateString()}
                       </span>
                       <a
                         href={googleCalendarUrl(task.title, task.dueDate, task.description)}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-xs text-indigo-400 hover:text-indigo-300"
+                        style={{ fontSize: '0.75rem', color: '#a78bfa' }}
                       >
-                        Calendar
+                        Add to Calendar
                       </a>
                     </>
                   )}
-                  <span className={`text-xs capitalize ${PRIORITY_COLORS[task.priority]}`}>
+                  <span style={{ fontSize: '0.75rem', textTransform: 'capitalize', color: PRIORITY_COLORS[task.priority] }}>
                     {task.priority}
                   </span>
                 </div>

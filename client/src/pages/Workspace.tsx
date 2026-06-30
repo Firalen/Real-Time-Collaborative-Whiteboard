@@ -110,92 +110,94 @@ export default function WorkspacePage() {
   };
 
   if (loading) {
-    return <AppLayout><div className="p-10 text-center text-gray-500">Loading workspace...</div></AppLayout>;
+    return <AppLayout><div className="loading-page">Loading workspace...</div></AppLayout>;
   }
 
   if (!workspace) {
-    return <AppLayout><div className="p-10 text-center text-red-400">{error || 'Workspace not found'}</div></AppLayout>;
+    return <AppLayout><div className="loading-page" style={{ color: 'var(--danger)' }}>{error || 'Workspace not found'}</div></AppLayout>;
   }
 
   const canEdit = ['owner', 'admin', 'editor'].includes(workspace.role);
   const canAdmin = ['owner', 'admin'].includes(workspace.role);
 
+  const tabs = ['boards', 'members', 'activity', 'integrations', 'billing'] as const;
+
   return (
     <AppLayout>
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">{workspace.name}</h1>
-            <p className="text-sm text-gray-500 capitalize">{workspace.role} · {members.length} members</p>
+      <div className="page-wrap">
+        <header className="page-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div className="workspace-avatar" style={{ width: '3.5rem', height: '3.5rem', fontSize: '1.5rem' }}>
+              {workspace.name.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <h1 className="page-title" style={{ fontSize: '1.5rem' }}>{workspace.name}</h1>
+              <p className="page-subtitle">
+                <span className="badge" style={{ marginRight: '0.5rem' }}>{workspace.role}</span>
+                {members.length} members
+              </p>
+            </div>
           </div>
-        </div>
+        </header>
 
-        <div className="flex gap-1 mb-6 border-b border-[#2e3348] overflow-x-auto">
-          {(['boards', 'members', 'activity', 'integrations', 'billing'] as const).map((t) => (
+        <div className="tab-bar">
+          {tabs.map((t) => (
             <button
               key={t}
+              type="button"
+              className={`tab-bar-btn ${tab === t ? 'active' : ''}`}
               onClick={() => setTab(t)}
-              className={`px-4 py-2 text-sm font-medium capitalize border-b-2 transition-colors whitespace-nowrap ${
-                tab === t ? 'border-indigo-500 text-white' : 'border-transparent text-gray-400 hover:text-white'
-              }`}
             >
-              {t}
+              {t === 'boards' ? 'Boards' : t === 'members' ? 'Members' : t === 'activity' ? 'Activity' : t === 'integrations' ? 'Integrations' : 'Billing'}
             </button>
           ))}
         </div>
 
-        {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+        {error && <p style={{ color: 'var(--danger)', fontSize: '0.875rem', marginBottom: '1rem' }}>{error}</p>}
 
         {tab === 'boards' && (
           <>
             {canEdit && (
-              <form onSubmit={handleCreateBoard} className="flex flex-wrap gap-3 mb-6 p-4 rounded-xl bg-[#1a1d27] border border-[#2e3348]">
+              <form onSubmit={handleCreateBoard} className="glass-card" style={{ padding: '1.25rem', marginBottom: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <input
                   value={newBoardName}
                   onChange={(e) => setNewBoardName(e.target.value)}
-                  placeholder="Board name..."
-                  className="flex-1 min-w-[200px] px-3 py-2 rounded-lg bg-[#0f1117] border border-[#2e3348] focus:border-indigo-500 focus:outline-none"
+                  placeholder="New board name..."
+                  className="input-field"
+                  style={{ flex: 1, minWidth: '180px' }}
                   required
                 />
                 <select
                   value={selectedTemplate}
                   onChange={(e) => setSelectedTemplate(e.target.value)}
-                  className="px-3 py-2 rounded-lg bg-[#0f1117] border border-[#2e3348] focus:outline-none"
+                  className="input-field"
+                  style={{ width: 'auto', minWidth: '140px' }}
                 >
                   {templates.map((t) => (
                     <option key={t.id} value={t.id}>{t.emoji} {t.name}</option>
                   ))}
                 </select>
-                <button type="submit" className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-medium">
-                  Create Board
-                </button>
+                <button type="submit" className="btn-primary" style={{ width: 'auto' }}>Create Board</button>
               </form>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' }}>
               {boards.map((board) => (
-                <div
-                  key={board.id}
-                  className="group relative p-4 rounded-xl bg-[#1a1d27] border border-[#2e3348] hover:border-indigo-500 transition-all"
-                >
-                  <Link to={`/board/${board.id}`} className="block">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xl">{board.emojiIcon || '📋'}</span>
-                      <h3 className="font-semibold group-hover:text-indigo-400 transition-colors">{board.name}</h3>
-                      {board.pinned && <span className="text-xs text-yellow-500">📌</span>}
+                <div key={board.id} className="glass-card glass-card-interactive" style={{ padding: '1.25rem', position: 'relative' }}>
+                  <Link to={`/board/${board.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                      <span style={{ fontSize: '1.5rem' }}>{board.emojiIcon || '📋'}</span>
+                      <h3 style={{ fontWeight: 600 }}>{board.name}</h3>
+                      {board.pinned && <span title="Pinned">📌</span>}
                     </div>
-                    <p className="text-xs text-gray-500">
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                       Updated {new Date(board.updatedAt).toLocaleDateString()}
                     </p>
                   </Link>
                   {canEdit && (
-                    <div className="flex gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => handlePin(board.id)} className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10">
-                        Pin
-                      </button>
-                      <button onClick={() => handleDuplicate(board.id)} className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10">
-                        Duplicate
-                      </button>
+                    <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.75rem' }}>
+                      <button type="button" onClick={() => handlePin(board.id)} className="btn-ghost" style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem' }}>Pin</button>
+                      <button type="button" onClick={() => handleDuplicate(board.id)} className="btn-ghost" style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem' }}>Duplicate</button>
                     </div>
                   )}
                 </div>
@@ -205,57 +207,45 @@ export default function WorkspacePage() {
         )}
 
         {tab === 'members' && (
-          <div className="space-y-6">
-            <div className="rounded-xl bg-[#1a1d27] border border-[#2e3348] divide-y divide-[#2e3348]">
-              {members.map((m) => (
-                <div key={m.id} className="flex items-center gap-3 px-4 py-3">
-                  <span
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white"
-                    style={{ backgroundColor: m.avatarColor }}
-                  >
-                    {m.name.charAt(0)}
-                  </span>
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{m.name}</p>
-                    <p className="text-xs text-gray-500">{m.email}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div className="glass-card" style={{ overflow: 'hidden' }}>
+              {members.map((m, i) => (
+                <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem 1.25rem', borderTop: i ? '1px solid var(--border)' : undefined }}>
+                  <span className="user-chip__avatar" style={{ backgroundColor: m.avatarColor }}>{m.name.charAt(0)}</span>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontWeight: 500, fontSize: '0.9rem' }}>{m.name}</p>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{m.email}</p>
                   </div>
-                  <span className="text-xs capitalize px-2 py-1 rounded bg-white/5 text-gray-400">{m.role}</span>
+                  <span className="badge">{m.role}</span>
                 </div>
               ))}
             </div>
-
             {canAdmin && (
-              <form onSubmit={handleInvite} className="flex gap-3">
-                <input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  placeholder="Invite by email..."
-                  className="flex-1 px-3 py-2 rounded-lg bg-[#1a1d27] border border-[#2e3348] focus:border-indigo-500 focus:outline-none"
-                  required
-                />
-                <button type="submit" className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-medium">
-                  Send Invite
-                </button>
+              <form onSubmit={handleInvite} style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="Invite by email..." className="input-field" style={{ flex: 1 }} required />
+                <button type="submit" className="btn-primary" style={{ width: 'auto' }}>Send Invite</button>
               </form>
             )}
           </div>
         )}
 
         {tab === 'integrations' && canAdmin && (
-          <div className="space-y-6 max-w-lg">
-            <div className="p-4 rounded-xl bg-[#1a1d27] border border-[#2e3348]">
-              <h3 className="font-semibold mb-2">Slack</h3>
-              <p className="text-sm text-gray-400 mb-3">Post to a channel when boards are updated or comments are added.</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: '32rem' }}>
+            <div className="glass-card" style={{ padding: '1.25rem' }}>
+              <h3 style={{ fontWeight: 600, marginBottom: '0.35rem' }}>Slack</h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>Post to a channel when boards are updated or comments are added.</p>
               <input
                 type="url"
                 value={slackWebhook}
                 onChange={(e) => setSlackWebhook(e.target.value)}
                 placeholder="https://hooks.slack.com/services/..."
-                className="w-full px-3 py-2 rounded-lg bg-[#0f1117] border border-[#2e3348] mb-2"
+                className="input-field"
+                style={{ marginBottom: '0.75rem' }}
               />
               <button
-                className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm"
+                type="button"
+                className="btn-primary"
+                style={{ width: 'auto' }}
                 onClick={async () => {
                   if (!token || !id) return;
                   await api.saveSlackIntegration(token, id, slackWebhook);
@@ -265,11 +255,13 @@ export default function WorkspacePage() {
                 Save Slack webhook
               </button>
             </div>
-            <div className="p-4 rounded-xl bg-[#1a1d27] border border-[#2e3348]">
-              <h3 className="font-semibold mb-2">Google Calendar</h3>
-              <p className="text-sm text-gray-400 mb-3">Add task due dates to Google Calendar from the Tasks panel.</p>
+            <div className="glass-card" style={{ padding: '1.25rem' }}>
+              <h3 style={{ fontWeight: 600, marginBottom: '0.35rem' }}>Google Calendar</h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>Add task due dates to Google Calendar from the Tasks panel.</p>
               <button
-                className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm"
+                type="button"
+                className="btn-primary"
+                style={{ width: 'auto' }}
                 onClick={async () => {
                   if (!token || !id) return;
                   await api.enableGoogleCalendar(token, id);
@@ -279,17 +271,17 @@ export default function WorkspacePage() {
                 Enable Google Calendar
               </button>
             </div>
-            {integrationMsg && <p className="text-sm text-green-400">{integrationMsg}</p>}
+            {integrationMsg && <p style={{ fontSize: '0.85rem', color: '#4ade80' }}>{integrationMsg}</p>}
           </div>
         )}
 
         {tab === 'billing' && canAdmin && (
-          <div className="space-y-6">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {subscription && (
-              <div className="p-4 rounded-xl bg-[#1a1d27] border border-[#2e3348]">
-                <p className="text-sm text-gray-500">Current plan</p>
-                <p className="text-xl font-bold capitalize">{subscription.planName}</p>
-                <p className="text-sm text-gray-400 mt-1">
+              <div className="glass-card" style={{ padding: '1.25rem' }}>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Current plan</p>
+                <p style={{ fontSize: '1.35rem', fontWeight: 700, marginTop: '0.25rem' }}>{subscription.planName}</p>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
                   Status: {subscription.status}
                   {subscription.trialEndsAt && (
                     <> · Trial ends {new Date(subscription.trialEndsAt).toLocaleDateString()}</>
@@ -298,50 +290,43 @@ export default function WorkspacePage() {
               </div>
             )}
 
-            <div className="flex gap-2 mb-4">
-              <button
-                onClick={() => setBillingCycle('monthly')}
-                className={`px-3 py-1.5 rounded-lg text-sm ${billingCycle === 'monthly' ? 'bg-indigo-600' : 'bg-white/5'}`}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setBillingCycle('annual')}
-                className={`px-3 py-1.5 rounded-lg text-sm ${billingCycle === 'annual' ? 'bg-indigo-600' : 'bg-white/5'}`}
-              >
-                Annual (save ~17%)
-              </button>
+            <div className="tab-bar" style={{ marginBottom: 0, width: 'fit-content' }}>
+              <button type="button" onClick={() => setBillingCycle('monthly')} className={`tab-bar-btn ${billingCycle === 'monthly' ? 'active' : ''}`}>Monthly</button>
+              <button type="button" onClick={() => setBillingCycle('annual')} className={`tab-bar-btn ${billingCycle === 'annual' ? 'active' : ''}`}>Annual (save ~17%)</button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
               {plans.map((plan) => {
                 const isCurrent = subscription?.planSlug === plan.slug;
                 const price = billingCycle === 'annual' ? plan.priceAnnual : plan.priceMonthly;
                 return (
                   <div
                     key={plan.slug}
-                    className={`p-5 rounded-xl border ${isCurrent ? 'border-indigo-500 bg-indigo-950/20' : 'border-[#2e3348] bg-[#1a1d27]'}`}
+                    className="glass-card"
+                    style={{ padding: '1.25rem', borderColor: isCurrent ? 'rgba(139, 92, 246, 0.5)' : undefined, boxShadow: isCurrent ? '0 0 0 1px rgba(139, 92, 246, 0.3)' : undefined }}
                   >
-                    <h3 className="font-bold text-lg">{plan.name}</h3>
-                    <p className="text-sm text-gray-500 mt-1 mb-3">{plan.description}</p>
-                    <p className="text-2xl font-bold mb-4">
+                    <h3 style={{ fontWeight: 700, fontSize: '1.1rem' }}>{plan.name}</h3>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem', marginBottom: '0.75rem' }}>{plan.description}</p>
+                    <p style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>
                       {price === 0 ? 'Free' : `$${price}`}
-                      {price > 0 && <span className="text-sm font-normal text-gray-500">/{billingCycle === 'annual' ? 'yr' : 'mo'}</span>}
+                      {price > 0 && <span style={{ fontSize: '0.8rem', fontWeight: 400, color: 'var(--text-muted)' }}>/{billingCycle === 'annual' ? 'yr' : 'mo'}</span>}
                     </p>
-                    <ul className="text-xs text-gray-400 space-y-1 mb-4">
+                    <ul style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem', listStyle: 'none', padding: 0 }}>
                       {Object.entries(plan.limits).slice(0, 3).map(([k, v]) => (
-                        <li key={k}>· {k.replace(/_/g, ' ')}: {v === -1 ? 'Unlimited' : v}</li>
+                        <li key={k} style={{ marginBottom: '0.25rem' }}>· {k.replace(/_/g, ' ')}: {v === -1 ? 'Unlimited' : v}</li>
                       ))}
                     </ul>
                     {isCurrent ? (
-                      <span className="text-sm text-indigo-400 font-medium">Current plan</span>
+                      <span style={{ fontSize: '0.85rem', color: '#a78bfa', fontWeight: 500 }}>Current plan</span>
                     ) : plan.slug === 'enterprise' ? (
-                      <a href="mailto:sales@example.com" className="text-sm text-indigo-400">Contact sales</a>
+                      <a href="mailto:sales@example.com" style={{ fontSize: '0.85rem', color: '#a78bfa' }}>Contact sales</a>
                     ) : plan.slug !== 'free' ? (
                       <button
+                        type="button"
                         onClick={() => handleUpgrade(plan.slug)}
                         disabled={upgrading === plan.slug}
-                        className="w-full py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm font-medium disabled:opacity-50"
+                        className="btn-primary"
+                        style={{ width: '100%' }}
                       >
                         {upgrading === plan.slug ? 'Redirecting...' : 'Upgrade'}
                       </button>
@@ -354,24 +339,24 @@ export default function WorkspacePage() {
         )}
 
         {tab === 'activity' && (
-          <div className="rounded-xl bg-[#1a1d27] border border-[#2e3348] divide-y divide-[#2e3348]">
+          <div className="glass-card" style={{ overflow: 'hidden' }}>
             {activity.length === 0 ? (
-              <p className="text-gray-500 text-sm p-4 text-center">No activity yet</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', padding: '1.5rem', textAlign: 'center' }}>No activity yet</p>
             ) : (
-              activity.map((a) => (
-                <div key={a.id} className="flex items-center gap-3 px-4 py-3">
+              activity.map((a, i) => (
+                <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.85rem 1.25rem', borderTop: i ? '1px solid var(--border)' : undefined }}>
                   <span
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                    style={{ backgroundColor: a.avatarColor || '#6366f1' }}
+                    className="user-chip__avatar"
+                    style={{ backgroundColor: a.avatarColor || '#8b5cf6' }}
                   >
                     {(a.userName || '?').charAt(0)}
                   </span>
-                  <div className="flex-1">
-                    <p className="text-sm">
-                      <span className="font-medium">{a.userName || 'Someone'}</span>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: '0.875rem' }}>
+                      <span style={{ fontWeight: 500 }}>{a.userName || 'Someone'}</span>
                       {' '}{a.action.replace('.', ' ')}
                     </p>
-                    <p className="text-xs text-gray-500">{new Date(a.createdAt).toLocaleString()}</p>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(a.createdAt).toLocaleString()}</p>
                   </div>
                 </div>
               ))

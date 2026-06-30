@@ -1,11 +1,11 @@
 {
-  "name": "Collaborative Whiteboard",
-  "short_name": "Whiteboard",
-  "description": "Real-time collaborative whiteboard SaaS",
+  "name": "CollabBoard — Real-Time Collaborative Whiteboard",
+  "short_name": "CollabBoard",
+  "description": "Real-time collaborative whiteboard for teams",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f1117",
-  "theme_color": "#6366f1",
+  "background_color": "#12141c",
+  "theme_color": "#8b5cf6",
   "icons": [
     {
       "src": "/icon.svg",

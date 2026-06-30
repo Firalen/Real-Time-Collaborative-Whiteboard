@@ -33,66 +33,90 @@ export default function Home() {
   };
 
   if (authLoading) {
-    return <div className="flex items-center justify-center min-h-screen text-gray-500">Loading...</div>;
+    return (
+      <div className="loading-page">
+        <div className="badge">CollabBoard</div>
+        <p>Loading your canvas...</p>
+      </div>
+    );
   }
 
   return (
     <AppLayout>
-      <div className="max-w-5xl mx-auto px-4 py-10">
-        <h1 className="text-3xl font-bold mb-2">Your Workspaces</h1>
-        <p className="text-gray-400 mb-8">Collaborate with your team on shared whiteboards</p>
+      {!user ? (
+        <section className="hero-section">
+          <span className="badge">Real-Time Collaborative Whiteboard</span>
+          <h1>Draw together.<br />Ship ideas faster.</h1>
+          <p>
+            CollabBoard is your team&apos;s infinite canvas — live cursors, tasks,
+            video calls, and AI tools in one beautiful workspace.
+          </p>
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link to="/login" className="btn-primary" style={{ width: 'auto', padding: '0.75rem 1.75rem' }}>
+              Get started free
+            </Link>
+            <Link to="/gallery" className="btn-ghost">
+              Explore gallery
+            </Link>
+          </div>
+          <div className="feature-pills">
+            {['Live sync', 'Video meetings', 'AI mind maps', 'Task boards', 'Version history'].map((f) => (
+              <span key={f} className="feature-pill">{f}</span>
+            ))}
+          </div>
+        </section>
+      ) : (
+        <div className="page-wrap">
+          <header className="page-header">
+            <h1 className="page-title">Your Workspaces</h1>
+            <p className="page-subtitle">Pick a workspace or create a new one for your team</p>
+          </header>
 
-        {user && (
-          <form onSubmit={handleCreateWorkspace} className="flex gap-3 mb-10">
+          <form onSubmit={handleCreateWorkspace} className="glass-card" style={{ padding: '1.25rem', marginBottom: '2rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             <input
               type="text"
               value={newWorkspaceName}
               onChange={(e) => setNewWorkspaceName(e.target.value)}
               placeholder="New workspace name..."
-              className="flex-1 px-4 py-2.5 rounded-lg bg-[#1a1d27] border border-[#2e3348] focus:border-indigo-500 focus:outline-none"
+              className="input-field"
+              style={{ flex: 1, minWidth: '200px' }}
               required
             />
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 font-medium transition-colors"
-            >
-              {loading ? 'Creating...' : 'Create Workspace'}
+            <button type="submit" disabled={loading} className="btn-primary" style={{ width: 'auto' }}>
+              {loading ? 'Creating...' : '+ Create workspace'}
             </button>
           </form>
-        )}
 
-        {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+          {error && <p style={{ color: 'var(--danger)', fontSize: '0.875rem', marginBottom: '1rem' }}>{error}</p>}
 
-        {user && workspaces.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {workspaces.map((ws) => (
-              <Link
-                key={ws.id}
-                to={`/workspace/${ws.id}`}
-                className="group p-5 rounded-xl bg-[#1a1d27] border border-[#2e3348] hover:border-indigo-500 transition-all"
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-lg bg-indigo-600/20 flex items-center justify-center text-lg">
-                    {ws.name.charAt(0).toUpperCase()}
+          {workspaces.length > 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+              {workspaces.map((ws) => (
+                <Link
+                  key={ws.id}
+                  to={`/workspace/${ws.id}`}
+                  className="glass-card glass-card-interactive"
+                  style={{ padding: '1.25rem', textDecoration: 'none', color: 'inherit', display: 'block' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                    <div className="workspace-avatar">{ws.name.charAt(0).toUpperCase()}</div>
+                    <div>
+                      <h3 style={{ fontWeight: 600, fontSize: '1rem' }}>{ws.name}</h3>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'capitalize', marginTop: '0.15rem' }}>
+                        {ws.role} workspace
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold group-hover:text-indigo-400 transition-colors">{ws.name}</h3>
-                    <p className="text-xs text-gray-500 capitalize">{ws.role}</p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-
-        {!user && (
-          <div className="text-center py-16 text-gray-400">
-            <p className="mb-4">Sign in to create workspaces and collaborate with your team.</p>
-            <Link to="/login" className="text-indigo-400 hover:text-indigo-300">Sign in →</Link>
-          </div>
-        )}
-      </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="glass-card" style={{ padding: '3rem', textAlign: 'center' }}>
+              <p style={{ color: 'var(--text-muted)' }}>No workspaces yet. Create your first one above!</p>
+            </div>
+          )}
+        </div>
+      )}
     </AppLayout>
   );
 }

@@ -27,69 +27,56 @@ export default function GalleryPage() {
 
   return (
     <AppLayout>
-      <div className="max-w-6xl mx-auto px-4 py-10">
-        <div className="flex items-center justify-between mb-8">
+      <div className="page-wrap">
+        <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h1 className="text-2xl font-bold">Public Gallery</h1>
-            <p className="text-gray-500 text-sm mt-1">Discover and explore community boards</p>
+            <span className="badge">Community</span>
+            <h1 className="page-title" style={{ marginTop: '0.5rem' }}>Public Gallery</h1>
+            <p className="page-subtitle">Discover inspiring boards from the CollabBoard community</p>
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setFilter('all')}
-              className={`px-3 py-1.5 rounded-lg text-sm ${filter === 'all' ? 'bg-indigo-600' : 'bg-white/5'}`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setFilter('featured')}
-              className={`px-3 py-1.5 rounded-lg text-sm ${filter === 'featured' ? 'bg-indigo-600' : 'bg-white/5'}`}
-            >
-              Featured
-            </button>
+          <div className="tab-bar" style={{ marginBottom: 0 }}>
+            <button type="button" className={`tab-bar-btn ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>All</button>
+            <button type="button" className={`tab-bar-btn ${filter === 'featured' ? 'active' : ''}`} onClick={() => setFilter('featured')}>Featured</button>
           </div>
-        </div>
+        </header>
 
-        {loading && <p className="text-gray-500 text-center py-16">Loading gallery...</p>}
+        {loading && <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '4rem' }}>Loading gallery...</p>}
 
         {!loading && boards.length === 0 && (
-          <p className="text-gray-500 text-center py-16">No public boards yet. Publish one from your workspace!</p>
+          <div className="glass-card" style={{ padding: '4rem', textAlign: 'center' }}>
+            <p style={{ color: 'var(--text-muted)' }}>No public boards yet. Be the first to publish!</p>
+          </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
           {boards.map((board) => (
-            <div
-              key={board.id}
-              className="rounded-xl bg-[#1a1d27] border border-[#2e3348] hover:border-indigo-500 transition-all overflow-hidden"
-            >
-              <div className="h-32 bg-gradient-to-br from-indigo-900/40 to-purple-900/40 flex items-center justify-center text-5xl">
-                {board.emoji_icon || '📋'}
-              </div>
-              <div className="p-4">
-                <Link to={`/board/${board.id}`} className="font-semibold hover:text-indigo-400 transition-colors">
+            <article key={board.id} className="glass-card glass-card-interactive" style={{ overflow: 'hidden', padding: 0 }}>
+              <div className="gallery-card__preview">{board.emoji_icon || '📋'}</div>
+              <div style={{ padding: '1.25rem' }}>
+                <Link to={`/board/${board.id}`} style={{ fontWeight: 600, fontSize: '1rem', textDecoration: 'none', color: 'inherit' }}>
                   {board.name}
                 </Link>
                 {board.description && (
-                  <p className="text-sm text-gray-500 mt-1 line-clamp-2">{board.description}</p>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.35rem', lineHeight: 1.5 }}>{board.description}</p>
                 )}
-                <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                   <span>by {board.author_name}</span>
-                  {board.category && (
-                    <span className="px-2 py-0.5 rounded bg-white/5 capitalize">{board.category}</span>
-                  )}
+                  {board.category && <span className="badge">{board.category}</span>}
                 </div>
-                <div className="flex items-center gap-3 mt-3">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.75rem' }}>
                   <button
+                    type="button"
                     onClick={() => handleLike(board.id)}
                     disabled={!token}
-                    className="text-sm text-gray-400 hover:text-pink-400 disabled:opacity-40"
-                    title={token ? 'Like' : 'Sign in to like'}
+                    className="btn-ghost"
+                    style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}
                   >
                     ❤️ {board.like_count}
                   </button>
-                  {board.featured && <span className="text-xs text-yellow-500">⭐ Featured</span>}
+                  {board.featured && <span style={{ fontSize: '0.7rem', color: '#fcd34d' }}>⭐ Featured</span>}
                 </div>
               </div>
-            </div>
+            </article>
           ))}
         </div>
       </div>

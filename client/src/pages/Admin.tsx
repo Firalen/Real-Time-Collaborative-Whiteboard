@@ -33,24 +33,27 @@ export default function AdminPage() {
 
   return (
     <AppLayout>
-      <div className="max-w-6xl mx-auto px-4 py-10">
-        <h1 className="text-2xl font-bold mb-2">Admin Dashboard</h1>
-        <p className="text-gray-500 text-sm mb-8">Platform metrics and workspace overview</p>
+      <div className="page-wrap">
+        <header className="page-header">
+          <span className="badge">Platform</span>
+          <h1 className="page-title" style={{ marginTop: '0.5rem' }}>Admin Dashboard</h1>
+          <p className="page-subtitle">CollabBoard platform metrics and workspace overview</p>
+        </header>
 
-        {loading && <p className="text-gray-500">Loading...</p>}
+        {loading && <p style={{ color: 'var(--text-muted)' }}>Loading...</p>}
 
         {metrics && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}>
             {[
               { label: 'Total users', value: metrics.totalUsers, icon: '👥' },
               { label: 'Workspaces', value: metrics.totalWorkspaces, icon: '🏢' },
               { label: 'Boards', value: metrics.totalBoards, icon: '📋' },
               { label: 'DAU', value: metrics.dau, icon: '📈' },
             ].map((stat) => (
-              <div key={stat.label} className="p-5 rounded-xl bg-[#1a1d27] border border-[#2e3348]">
-                <span className="text-2xl">{stat.icon}</span>
-                <p className="text-3xl font-bold mt-2">{stat.value.toLocaleString()}</p>
-                <p className="text-sm text-gray-500">{stat.label}</p>
+              <div key={stat.label} className="stat-card">
+                <span style={{ fontSize: '1.5rem' }}>{stat.icon}</span>
+                <p className="stat-card__value">{stat.value.toLocaleString()}</p>
+                <p className="stat-card__label">{stat.label}</p>
               </div>
             ))}
           </div>
@@ -58,26 +61,26 @@ export default function AdminPage() {
 
         {workspaces.length > 0 && (
           <>
-            <h2 className="text-lg font-semibold mb-4">Workspaces</h2>
-            <div className="rounded-xl bg-[#1a1d27] border border-[#2e3348] overflow-hidden">
-              <table className="w-full text-sm">
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem' }}>Workspaces</h2>
+            <div className="glass-card" style={{ overflow: 'hidden' }}>
+              <table style={{ width: '100%', fontSize: '0.875rem', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr className="border-b border-[#2e3348] text-gray-500 text-left">
-                    <th className="px-4 py-3">Name</th>
-                    <th className="px-4 py-3">Plan</th>
-                    <th className="px-4 py-3">Members</th>
-                    <th className="px-4 py-3">Created</th>
+                  <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)', textAlign: 'left' }}>
+                    <th style={{ padding: '0.85rem 1.25rem', fontWeight: 500 }}>Name</th>
+                    <th style={{ padding: '0.85rem 1.25rem', fontWeight: 500 }}>Plan</th>
+                    <th style={{ padding: '0.85rem 1.25rem', fontWeight: 500 }}>Members</th>
+                    <th style={{ padding: '0.85rem 1.25rem', fontWeight: 500 }}>Created</th>
                   </tr>
                 </thead>
                 <tbody>
                   {workspaces.map((ws) => (
-                    <tr key={ws.id} className="border-b border-[#2e3348]/50 hover:bg-white/5">
-                      <td className="px-4 py-3">
-                        <Link to={`/workspace/${ws.id}`} className="hover:text-indigo-400">{ws.name}</Link>
+                    <tr key={ws.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '0.85rem 1.25rem' }}>
+                        <Link to={`/workspace/${ws.id}`} style={{ fontWeight: 500 }}>{ws.name}</Link>
                       </td>
-                      <td className="px-4 py-3 capitalize">{ws.plan_slug || 'free'}</td>
-                      <td className="px-4 py-3">{ws.member_count}</td>
-                      <td className="px-4 py-3 text-gray-500">
+                      <td style={{ padding: '0.85rem 1.25rem' }}><span className="badge">{ws.plan_slug || 'free'}</span></td>
+                      <td style={{ padding: '0.85rem 1.25rem' }}>{ws.member_count}</td>
+                      <td style={{ padding: '0.85rem 1.25rem', color: 'var(--text-muted)' }}>
                         {new Date(ws.created_at).toLocaleDateString()}
                       </td>
                     </tr>

@@ -134,6 +134,7 @@ export default function BoardSidebar(props: BoardSidebarProps) {
             title={t.label}
           >
             {t.icon}
+            <span className="tab-label">{t.label}</span>
           </button>
         ))}
       </div>
