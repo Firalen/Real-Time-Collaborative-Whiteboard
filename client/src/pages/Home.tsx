@@ -5,6 +5,185 @@ import { api } from '../utils/api';
 import AppLayout from '../components/AppLayout';
 import type { Workspace } from '../types/saas';
 
+const FEATURES = [
+  {
+    icon: '✏️',
+    title: 'Infinite canvas',
+    description: 'Draw, sketch, and brainstorm on a limitless whiteboard with pen, shapes, text, sticky notes, and images.',
+  },
+  {
+    icon: '⚡',
+    title: 'Real-time sync',
+    description: 'See teammates\' cursors and edits live. Every stroke syncs instantly across all connected browsers.',
+  },
+  {
+    icon: '👥',
+    title: 'Team workspaces',
+    description: 'Organize boards by workspace with roles, invitations, and shared access for your whole team.',
+  },
+  {
+    icon: '💬',
+    title: 'Comments & chat',
+    description: 'Discuss ideas in-context with threaded comments, @mentions, and a built-in board chat.',
+  },
+  {
+    icon: '✅',
+    title: 'Tasks & activity',
+    description: 'Turn canvas elements into tasks, track due dates, and follow everything in the activity feed.',
+  },
+  {
+    icon: '📹',
+    title: 'Video meetings',
+    description: 'Jump into a WebRTC call right from the board sidebar — no extra app required.',
+  },
+  {
+    icon: '🤖',
+    title: 'AI assistant',
+    description: 'Generate mind maps and images with AI to kickstart brainstorming sessions faster.',
+  },
+  {
+    icon: '🕐',
+    title: 'Version history',
+    description: 'Never lose work — restore previous board snapshots whenever you need to roll back.',
+  },
+];
+
+const STEPS = [
+  { title: 'Create a workspace', description: 'Set up a shared space for your team or project.' },
+  { title: 'Add boards', description: 'Start from blank or use templates for wireframes, retros, and more.' },
+  { title: 'Collaborate live', description: 'Invite teammates, draw together, chat, and ship ideas faster.' },
+];
+
+function HomeShowcase({ loggedIn }: { loggedIn: boolean }) {
+  return (
+    <section className="home-showcase" aria-labelledby="home-showcase-title">
+      <div className="home-showcase__hero">
+        <span className="badge">Real-Time Collaborative Whiteboard</span>
+        <h1 id="home-showcase-title" className="home-showcase__title">
+          Your team&apos;s creative<br />command center
+        </h1>
+        <p className="home-showcase__lead">
+          <strong style={{ color: 'var(--text)', fontWeight: 600 }}>CollabBoard</strong> brings drawing,
+          planning, and communication into one place. Whether you&apos;re wireframing a product,
+          running a retro, or whiteboarding with remote teammates — everyone stays in sync.
+        </p>
+        <div className="home-showcase__actions">
+          {!loggedIn ? (
+            <>
+              <Link to="/login" className="btn-primary" style={{ width: 'auto', padding: '0.75rem 1.75rem' }}>
+                Get started free
+              </Link>
+              <Link to="/gallery" className="btn-ghost">Explore gallery</Link>
+            </>
+          ) : (
+            <a href="#dashboard" className="btn-primary" style={{ width: 'auto', padding: '0.75rem 1.75rem' }}>
+              Go to your workspaces ↓
+            </a>
+          )}
+        </div>
+        <div className="feature-pills" style={{ marginTop: '1.75rem' }}>
+          {['Live cursors', 'WebRTC calls', 'AI tools', 'Slack integration', 'PWA ready'].map((f) => (
+            <span key={f} className="feature-pill">{f}</span>
+          ))}
+        </div>
+      </div>
+
+      <div className="home-features">
+        {FEATURES.map((f) => (
+          <article key={f.title} className="home-feature-card">
+            <span className="home-feature-card__icon" aria-hidden>{f.icon}</span>
+            <h3>{f.title}</h3>
+            <p>{f.description}</p>
+          </article>
+        ))}
+      </div>
+
+      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', fontWeight: 700, marginBottom: '1rem', letterSpacing: '-0.01em' }}>
+        How it works
+      </h2>
+      <div className="home-steps">
+        {STEPS.map((step, i) => (
+          <div key={step.title} className="home-step">
+            <span className="home-step__num">{i + 1}</span>
+            <h4>{step.title}</h4>
+            <p>{step.description}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function WorkspaceDashboard({
+  workspaces,
+  newWorkspaceName,
+  setNewWorkspaceName,
+  loading,
+  error,
+  onCreate,
+}: {
+  workspaces: Workspace[];
+  newWorkspaceName: string;
+  setNewWorkspaceName: (v: string) => void;
+  loading: boolean;
+  error: string;
+  onCreate: (e: React.FormEvent) => void;
+}) {
+  return (
+    <section id="dashboard" className="home-dashboard">
+      <div className="home-dashboard__divider">Your dashboard</div>
+
+      <header className="home-dashboard__header">
+        <h2>Your Workspaces</h2>
+        <p>Pick a workspace or create a new one to start collaborating</p>
+      </header>
+
+      <form onSubmit={onCreate} className="glass-card home-create-form">
+        <input
+          type="text"
+          value={newWorkspaceName}
+          onChange={(e) => setNewWorkspaceName(e.target.value)}
+          placeholder="New workspace name..."
+          className="input-field"
+          required
+        />
+        <button type="submit" disabled={loading} className="btn-primary" style={{ width: 'auto', flexShrink: 0 }}>
+          {loading ? 'Creating...' : '+ Create workspace'}
+        </button>
+      </form>
+
+      {error && <p style={{ color: 'var(--danger)', fontSize: '0.875rem', marginBottom: '1rem' }}>{error}</p>}
+
+      {workspaces.length > 0 ? (
+        <div className="home-workspace-grid">
+          {workspaces.map((ws) => (
+            <Link
+              key={ws.id}
+              to={`/workspace/${ws.id}`}
+              className="glass-card glass-card-interactive home-workspace-card"
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                <div className="workspace-avatar">{ws.name.charAt(0).toUpperCase()}</div>
+                <div>
+                  <h3 style={{ fontWeight: 600, fontSize: '1rem' }}>{ws.name}</h3>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'capitalize', marginTop: '0.15rem' }}>
+                    {ws.role} workspace
+                  </p>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div className="glass-card" style={{ padding: '3rem', textAlign: 'center' }}>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }}>No workspaces yet</p>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Create your first workspace above to get started.</p>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function Home() {
   const { user, token, loading: authLoading } = useAuth();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
@@ -43,79 +222,16 @@ export default function Home() {
 
   return (
     <AppLayout>
-      {!user ? (
-        <section className="hero-section">
-          <span className="badge">Real-Time Collaborative Whiteboard</span>
-          <h1>Draw together.<br />Ship ideas faster.</h1>
-          <p>
-            CollabBoard is your team&apos;s infinite canvas — live cursors, tasks,
-            video calls, and AI tools in one beautiful workspace.
-          </p>
-          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link to="/login" className="btn-primary" style={{ width: 'auto', padding: '0.75rem 1.75rem' }}>
-              Get started free
-            </Link>
-            <Link to="/gallery" className="btn-ghost">
-              Explore gallery
-            </Link>
-          </div>
-          <div className="feature-pills">
-            {['Live sync', 'Video meetings', 'AI mind maps', 'Task boards', 'Version history'].map((f) => (
-              <span key={f} className="feature-pill">{f}</span>
-            ))}
-          </div>
-        </section>
-      ) : (
-        <div className="page-wrap">
-          <header className="page-header">
-            <h1 className="page-title">Your Workspaces</h1>
-            <p className="page-subtitle">Pick a workspace or create a new one for your team</p>
-          </header>
-
-          <form onSubmit={handleCreateWorkspace} className="glass-card" style={{ padding: '1.25rem', marginBottom: '2rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <input
-              type="text"
-              value={newWorkspaceName}
-              onChange={(e) => setNewWorkspaceName(e.target.value)}
-              placeholder="New workspace name..."
-              className="input-field"
-              style={{ flex: 1, minWidth: '200px' }}
-              required
-            />
-            <button type="submit" disabled={loading} className="btn-primary" style={{ width: 'auto' }}>
-              {loading ? 'Creating...' : '+ Create workspace'}
-            </button>
-          </form>
-
-          {error && <p style={{ color: 'var(--danger)', fontSize: '0.875rem', marginBottom: '1rem' }}>{error}</p>}
-
-          {workspaces.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
-              {workspaces.map((ws) => (
-                <Link
-                  key={ws.id}
-                  to={`/workspace/${ws.id}`}
-                  className="glass-card glass-card-interactive"
-                  style={{ padding: '1.25rem', textDecoration: 'none', color: 'inherit', display: 'block' }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                    <div className="workspace-avatar">{ws.name.charAt(0).toUpperCase()}</div>
-                    <div>
-                      <h3 style={{ fontWeight: 600, fontSize: '1rem' }}>{ws.name}</h3>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'capitalize', marginTop: '0.15rem' }}>
-                        {ws.role} workspace
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="glass-card" style={{ padding: '3rem', textAlign: 'center' }}>
-              <p style={{ color: 'var(--text-muted)' }}>No workspaces yet. Create your first one above!</p>
-            </div>
-          )}
-        </div>
+      <HomeShowcase loggedIn={!!user} />
+      {user && (
+        <WorkspaceDashboard
+          workspaces={workspaces}
+          newWorkspaceName={newWorkspaceName}
+          setNewWorkspaceName={setNewWorkspaceName}
+          loading={loading}
+          error={error}
+          onCreate={handleCreateWorkspace}
+        />
       )}
     </AppLayout>
   );
