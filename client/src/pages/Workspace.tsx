@@ -120,127 +120,158 @@ export default function WorkspacePage() {
   const canEdit = ['owner', 'admin', 'editor'].includes(workspace.role);
   const canAdmin = ['owner', 'admin'].includes(workspace.role);
 
-  const tabs = ['boards', 'members', 'activity', 'integrations', 'billing'] as const;
+  type WorkspaceTab = 'boards' | 'members' | 'activity' | 'integrations' | 'billing';
+
+  const tabConfig: { id: WorkspaceTab; label: string; icon: string; description: string; adminOnly?: boolean }[] = [
+    { id: 'boards', label: 'Boards', icon: '📋', description: 'Create and open whiteboards in this workspace' },
+    { id: 'members', label: 'Members', icon: '👥', description: 'View teammates and invite new collaborators' },
+    { id: 'activity', label: 'Activity', icon: '📊', description: 'Recent updates across boards and members' },
+    { id: 'integrations', label: 'Integrations', icon: '🔗', description: 'Connect Slack and Google Calendar', adminOnly: true },
+    { id: 'billing', label: 'Billing', icon: '💳', description: 'Manage your plan and subscription', adminOnly: true },
+  ];
+
+  const visibleTabs = tabConfig.filter((t) => !t.adminOnly || canAdmin);
+  const activeTabMeta = tabConfig.find((t) => t.id === tab);
 
   return (
     <AppLayout>
-      <div className="page-wrap">
-        <header className="page-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div className="workspace-avatar" style={{ width: '3.5rem', height: '3.5rem', fontSize: '1.5rem' }}>
-              {workspace.name.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <h1 className="page-title" style={{ fontSize: '1.5rem' }}>{workspace.name}</h1>
-              <p className="page-subtitle">
-                <span className="badge" style={{ marginRight: '0.5rem' }}>{workspace.role}</span>
-                {members.length} members
-              </p>
+      <div className="workspace-page">
+        <header className="workspace-hero">
+          <div className="workspace-avatar workspace-hero__avatar">
+            {workspace.name.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <h1 className="workspace-hero__title">{workspace.name}</h1>
+            <div className="workspace-hero__meta">
+              <span className="badge">{workspace.role}</span>
+              <span>{members.length} {members.length === 1 ? 'member' : 'members'}</span>
+              <span>{boards.length} {boards.length === 1 ? 'board' : 'boards'}</span>
             </div>
           </div>
         </header>
 
-        <div className="tab-bar">
-          {tabs.map((t) => (
-            <button
-              key={t}
-              type="button"
-              className={`tab-bar-btn ${tab === t ? 'active' : ''}`}
-              onClick={() => setTab(t)}
-            >
-              {t === 'boards' ? 'Boards' : t === 'members' ? 'Members' : t === 'activity' ? 'Activity' : t === 'integrations' ? 'Integrations' : 'Billing'}
-            </button>
-          ))}
-        </div>
+        <div className="workspace-layout">
+          <nav className="workspace-nav" aria-label="Workspace sections">
+            {visibleTabs.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`workspace-nav-btn ${tab === t.id ? 'active' : ''}`}
+                onClick={() => setTab(t.id)}
+              >
+                <span className="workspace-nav-btn__icon" aria-hidden>{t.icon}</span>
+                <span>{t.label}</span>
+              </button>
+            ))}
+          </nav>
 
-        {error && <p style={{ color: 'var(--danger)', fontSize: '0.875rem', marginBottom: '1rem' }}>{error}</p>}
+          <div className="workspace-content">
+            {activeTabMeta && (
+              <div className="workspace-section-header">
+                <h2>{activeTabMeta.label}</h2>
+                <p>{activeTabMeta.description}</p>
+              </div>
+            )}
+
+            {error && (
+              <p style={{ color: 'var(--danger)', fontSize: '0.875rem', marginBottom: '1.25rem' }}>{error}</p>
+            )}
 
         {tab === 'boards' && (
-          <>
+          <div className="workspace-panel">
             {canEdit && (
-              <form onSubmit={handleCreateBoard} className="glass-card" style={{ padding: '1.25rem', marginBottom: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-                <input
-                  value={newBoardName}
-                  onChange={(e) => setNewBoardName(e.target.value)}
-                  placeholder="New board name..."
-                  className="input-field"
-                  style={{ flex: 1, minWidth: '180px' }}
-                  required
-                />
-                <select
-                  value={selectedTemplate}
-                  onChange={(e) => setSelectedTemplate(e.target.value)}
-                  className="input-field"
-                  style={{ width: 'auto', minWidth: '140px' }}
-                >
-                  {templates.map((t) => (
-                    <option key={t.id} value={t.id}>{t.emoji} {t.name}</option>
-                  ))}
-                </select>
-                <button type="submit" className="btn-primary" style={{ width: 'auto' }}>Create Board</button>
+              <form onSubmit={handleCreateBoard} className="glass-card workspace-create-form">
+                <p style={{ fontWeight: 600, fontSize: '0.95rem', margin: 0 }}>Create a new board</p>
+                <div className="workspace-create-form__row">
+                  <input
+                    value={newBoardName}
+                    onChange={(e) => setNewBoardName(e.target.value)}
+                    placeholder="Board name..."
+                    className="input-field"
+                    required
+                  />
+                  <select
+                    value={selectedTemplate}
+                    onChange={(e) => setSelectedTemplate(e.target.value)}
+                    className="input-field"
+                  >
+                    {templates.map((t) => (
+                      <option key={t.id} value={t.id}>{t.emoji} {t.name}</option>
+                    ))}
+                  </select>
+                  <button type="submit" className="btn-primary" style={{ width: 'auto', flexShrink: 0 }}>Create Board</button>
+                </div>
               </form>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' }}>
+            <div className="workspace-board-grid">
               {boards.map((board) => (
-                <div key={board.id} className="glass-card glass-card-interactive" style={{ padding: '1.25rem', position: 'relative' }}>
+                <div key={board.id} className="glass-card glass-card-interactive workspace-board-card">
                   <Link to={`/board/${board.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-                      <span style={{ fontSize: '1.5rem' }}>{board.emojiIcon || '📋'}</span>
-                      <h3 style={{ fontWeight: 600 }}>{board.name}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '1.75rem' }}>{board.emojiIcon || '📋'}</span>
+                      <h3 style={{ fontWeight: 600, fontSize: '1.05rem' }}>{board.name}</h3>
                       {board.pinned && <span title="Pinned">📌</span>}
                     </div>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                       Updated {new Date(board.updatedAt).toLocaleDateString()}
                     </p>
                   </Link>
                   {canEdit && (
-                    <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.75rem' }}>
-                      <button type="button" onClick={() => handlePin(board.id)} className="btn-ghost" style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem' }}>Pin</button>
-                      <button type="button" onClick={() => handleDuplicate(board.id)} className="btn-ghost" style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem' }}>Duplicate</button>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
+                      <button type="button" onClick={() => handlePin(board.id)} className="btn-ghost" style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}>Pin</button>
+                      <button type="button" onClick={() => handleDuplicate(board.id)} className="btn-ghost" style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}>Duplicate</button>
                     </div>
                   )}
                 </div>
               ))}
+              {boards.length === 0 && (
+                <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', gridColumn: '1 / -1' }}>
+                  <p style={{ color: 'var(--text-muted)' }}>No boards yet. Create your first board above.</p>
+                </div>
+              )}
             </div>
-          </>
+          </div>
         )}
 
         {tab === 'members' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div className="workspace-panel">
             <div className="glass-card" style={{ overflow: 'hidden' }}>
               {members.map((m, i) => (
-                <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem 1.25rem', borderTop: i ? '1px solid var(--border)' : undefined }}>
-                  <span className="user-chip__avatar" style={{ backgroundColor: m.avatarColor }}>{m.name.charAt(0)}</span>
+                <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.15rem 1.5rem', borderTop: i ? '1px solid var(--border)' : undefined }}>
+                  <span className="user-chip__avatar" style={{ backgroundColor: m.avatarColor, width: 36, height: 36, fontSize: '0.85rem' }}>{m.name.charAt(0)}</span>
                   <div style={{ flex: 1 }}>
-                    <p style={{ fontWeight: 500, fontSize: '0.9rem' }}>{m.name}</p>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{m.email}</p>
+                    <p style={{ fontWeight: 500, fontSize: '0.95rem' }}>{m.name}</p>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>{m.email}</p>
                   </div>
                   <span className="badge">{m.role}</span>
                 </div>
               ))}
             </div>
             {canAdmin && (
-              <form onSubmit={handleInvite} style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="Invite by email..." className="input-field" style={{ flex: 1 }} required />
-                <button type="submit" className="btn-primary" style={{ width: 'auto' }}>Send Invite</button>
+              <form onSubmit={handleInvite} className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <p style={{ fontWeight: 600, margin: 0 }}>Invite a teammate</p>
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="colleague@company.com" className="input-field" style={{ flex: 1, minWidth: '200px' }} required />
+                  <button type="submit" className="btn-primary" style={{ width: 'auto' }}>Send Invite</button>
+                </div>
               </form>
             )}
           </div>
         )}
 
         {tab === 'integrations' && canAdmin && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: '32rem' }}>
-            <div className="glass-card" style={{ padding: '1.25rem' }}>
-              <h3 style={{ fontWeight: 600, marginBottom: '0.35rem' }}>Slack</h3>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>Post to a channel when boards are updated or comments are added.</p>
+          <div className="workspace-panel" style={{ maxWidth: '36rem' }}>
+            <div className="glass-card" style={{ padding: '1.5rem' }}>
+              <h3 style={{ fontWeight: 600, marginBottom: '0.5rem', fontSize: '1rem' }}>Slack</h3>
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1rem', lineHeight: 1.55 }}>Post to a channel when boards are updated or comments are added.</p>
               <input
                 type="url"
                 value={slackWebhook}
                 onChange={(e) => setSlackWebhook(e.target.value)}
                 placeholder="https://hooks.slack.com/services/..."
                 className="input-field"
-                style={{ marginBottom: '0.75rem' }}
+                style={{ marginBottom: '1rem' }}
               />
               <button
                 type="button"
@@ -255,9 +286,9 @@ export default function WorkspacePage() {
                 Save Slack webhook
               </button>
             </div>
-            <div className="glass-card" style={{ padding: '1.25rem' }}>
-              <h3 style={{ fontWeight: 600, marginBottom: '0.35rem' }}>Google Calendar</h3>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>Add task due dates to Google Calendar from the Tasks panel.</p>
+            <div className="glass-card" style={{ padding: '1.5rem' }}>
+              <h3 style={{ fontWeight: 600, marginBottom: '0.5rem', fontSize: '1rem' }}>Google Calendar</h3>
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1rem', lineHeight: 1.55 }}>Add task due dates to Google Calendar from the Tasks panel.</p>
               <button
                 type="button"
                 className="btn-primary"
@@ -271,17 +302,17 @@ export default function WorkspacePage() {
                 Enable Google Calendar
               </button>
             </div>
-            {integrationMsg && <p style={{ fontSize: '0.85rem', color: '#4ade80' }}>{integrationMsg}</p>}
+            {integrationMsg && <p style={{ fontSize: '0.875rem', color: '#4ade80' }}>{integrationMsg}</p>}
           </div>
         )}
 
         {tab === 'billing' && canAdmin && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div className="workspace-panel">
             {subscription && (
-              <div className="glass-card" style={{ padding: '1.25rem' }}>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Current plan</p>
-                <p style={{ fontSize: '1.35rem', fontWeight: 700, marginTop: '0.25rem' }}>{subscription.planName}</p>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
+              <div className="glass-card" style={{ padding: '1.5rem' }}>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>Current plan</p>
+                <p style={{ fontSize: '1.5rem', fontWeight: 700, marginTop: '0.35rem' }}>{subscription.planName}</p>
+                <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
                   Status: {subscription.status}
                   {subscription.trialEndsAt && (
                     <> · Trial ends {new Date(subscription.trialEndsAt).toLocaleDateString()}</>
@@ -290,12 +321,12 @@ export default function WorkspacePage() {
               </div>
             )}
 
-            <div className="tab-bar" style={{ marginBottom: 0, width: 'fit-content' }}>
+            <div className="tab-bar tab-bar--compact">
               <button type="button" onClick={() => setBillingCycle('monthly')} className={`tab-bar-btn ${billingCycle === 'monthly' ? 'active' : ''}`}>Monthly</button>
               <button type="button" onClick={() => setBillingCycle('annual')} className={`tab-bar-btn ${billingCycle === 'annual' ? 'active' : ''}`}>Annual (save ~17%)</button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
+            <div className="workspace-plan-grid">
               {plans.map((plan) => {
                 const isCurrent = subscription?.planSlug === plan.slug;
                 const price = billingCycle === 'annual' ? plan.priceAnnual : plan.priceMonthly;
@@ -303,23 +334,23 @@ export default function WorkspacePage() {
                   <div
                     key={plan.slug}
                     className="glass-card"
-                    style={{ padding: '1.25rem', borderColor: isCurrent ? 'rgba(139, 92, 246, 0.5)' : undefined, boxShadow: isCurrent ? '0 0 0 1px rgba(139, 92, 246, 0.3)' : undefined }}
+                    style={{ padding: '1.5rem', borderColor: isCurrent ? 'rgba(139, 92, 246, 0.5)' : undefined, boxShadow: isCurrent ? '0 0 0 1px rgba(139, 92, 246, 0.3)' : undefined }}
                   >
-                    <h3 style={{ fontWeight: 700, fontSize: '1.1rem' }}>{plan.name}</h3>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem', marginBottom: '0.75rem' }}>{plan.description}</p>
-                    <p style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>
+                    <h3 style={{ fontWeight: 700, fontSize: '1.15rem' }}>{plan.name}</h3>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.35rem', marginBottom: '1rem', lineHeight: 1.5 }}>{plan.description}</p>
+                    <p style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '1.25rem' }}>
                       {price === 0 ? 'Free' : `$${price}`}
-                      {price > 0 && <span style={{ fontSize: '0.8rem', fontWeight: 400, color: 'var(--text-muted)' }}>/{billingCycle === 'annual' ? 'yr' : 'mo'}</span>}
+                      {price > 0 && <span style={{ fontSize: '0.85rem', fontWeight: 400, color: 'var(--text-muted)' }}>/{billingCycle === 'annual' ? 'yr' : 'mo'}</span>}
                     </p>
-                    <ul style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem', listStyle: 'none', padding: 0 }}>
+                    <ul style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1.25rem', listStyle: 'none', padding: 0, lineHeight: 1.7 }}>
                       {Object.entries(plan.limits).slice(0, 3).map(([k, v]) => (
-                        <li key={k} style={{ marginBottom: '0.25rem' }}>· {k.replace(/_/g, ' ')}: {v === -1 ? 'Unlimited' : v}</li>
+                        <li key={k}>· {k.replace(/_/g, ' ')}: {v === -1 ? 'Unlimited' : v}</li>
                       ))}
                     </ul>
                     {isCurrent ? (
-                      <span style={{ fontSize: '0.85rem', color: '#a78bfa', fontWeight: 500 }}>Current plan</span>
+                      <span style={{ fontSize: '0.875rem', color: '#a78bfa', fontWeight: 500 }}>Current plan</span>
                     ) : plan.slug === 'enterprise' ? (
-                      <a href="mailto:sales@example.com" style={{ fontSize: '0.85rem', color: '#a78bfa' }}>Contact sales</a>
+                      <a href="mailto:sales@example.com" style={{ fontSize: '0.875rem', color: '#a78bfa' }}>Contact sales</a>
                     ) : plan.slug !== 'free' ? (
                       <button
                         type="button"
@@ -341,28 +372,30 @@ export default function WorkspacePage() {
         {tab === 'activity' && (
           <div className="glass-card" style={{ overflow: 'hidden' }}>
             {activity.length === 0 ? (
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', padding: '1.5rem', textAlign: 'center' }}>No activity yet</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', padding: '2.5rem', textAlign: 'center' }}>No activity yet — changes will show up here.</p>
             ) : (
               activity.map((a, i) => (
-                <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.85rem 1.25rem', borderTop: i ? '1px solid var(--border)' : undefined }}>
+                <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.15rem 1.5rem', borderTop: i ? '1px solid var(--border)' : undefined }}>
                   <span
                     className="user-chip__avatar"
-                    style={{ backgroundColor: a.avatarColor || '#8b5cf6' }}
+                    style={{ backgroundColor: a.avatarColor || '#8b5cf6', width: 36, height: 36, fontSize: '0.85rem' }}
                   >
                     {(a.userName || '?').charAt(0)}
                   </span>
                   <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: '0.875rem' }}>
+                    <p style={{ fontSize: '0.9rem', lineHeight: 1.45 }}>
                       <span style={{ fontWeight: 500 }}>{a.userName || 'Someone'}</span>
                       {' '}{a.action.replace('.', ' ')}
                     </p>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(a.createdAt).toLocaleString()}</p>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{new Date(a.createdAt).toLocaleString()}</p>
                   </div>
                 </div>
               ))
             )}
           </div>
         )}
+          </div>
+        </div>
       </div>
     </AppLayout>
   );
