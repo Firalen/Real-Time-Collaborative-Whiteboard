@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { googleCalendarUrl } from '../../utils/calendar';
 import type { OnlineUser, Board } from '../../types';
 import type { ConnectionStatus } from '../../hooks/useSocket';
@@ -110,9 +111,17 @@ export default function BoardSidebar(props: BoardSidebarProps) {
     setBoardPassword('');
   };
 
+  const backHref = props.board.workspaceId
+    ? `/workspace/${props.board.workspaceId}`
+    : '/';
+  const backLabel = props.board.workspaceId ? 'Workspace' : 'Dashboard';
+
   return (
     <aside className="board-sidebar">
       <div className="sidebar-header">
+        <Link to={backHref} className="sidebar-back-btn" title={backLabel}>
+          ←
+        </Link>
         <h2>{props.board.emojiIcon || '📋'} {props.board.name}</h2>
         <span className={`status-dot ${props.connectionStatus === 'connected' ? 'online' : props.connectionStatus === 'reconnecting' ? 'reconnecting' : 'offline'}`} />
       </div>

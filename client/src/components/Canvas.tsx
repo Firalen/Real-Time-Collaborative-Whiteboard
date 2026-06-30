@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import type { Tool, DrawEvent, Board } from '../types';
 import { useCanvas } from '../hooks/useCanvas';
 import { useSocket } from '../hooks/useSocket';
@@ -196,6 +197,8 @@ export default function Canvas({ boardId, board, viewOnly = false }: CanvasProps
   };
 
   const shareUrl = window.location.href;
+  const backHref = board.workspaceId ? `/workspace/${board.workspaceId}` : '/';
+  const backLabel = board.workspaceId ? 'Back to workspace' : 'Back to dashboard';
 
   const handleRestoreVersion = async (versionId: string) => {
     try {
@@ -259,6 +262,16 @@ export default function Canvas({ boardId, board, viewOnly = false }: CanvasProps
       />
 
       <div className="canvas-area">
+        <nav className="board-nav" aria-label="Board navigation">
+          <Link to={backHref} className="board-nav__back">
+            <span aria-hidden>←</span>
+            {backLabel}
+          </Link>
+          <span className="board-nav__title">
+            {board.emojiIcon || '📋'} {board.name}
+          </span>
+        </nav>
+
         {!viewOnly && (
           <Toolbar
             tool={tool}
