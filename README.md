@@ -1,6 +1,6 @@
-# Real-Time Collaborative Whiteboard
+# CollabBoard — Real-Time Collaborative Whiteboard
 
-A multi-user drawing app with live cursors, real-time sync, and board management.
+A multi-user SaaS whiteboard with live cursors, workspaces, billing, AI tools, video meetings, and gallery.
 
 ## Tech Stack
 
@@ -86,6 +86,48 @@ npm run dev
 
 Open http://localhost:5173
 
+## Environment variables
+
+Two files: `server/.env` and `client/.env`. Copy from the `.env.example` files in each folder.
+
+### Server (`server/.env`)
+
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `PORT` | No (default `3001`) | HTTP + Socket.IO port |
+| `NODE_ENV` | Yes in prod | `development` or `production` |
+| `DATABASE_URL` | **Yes** | PostgreSQL connection string |
+| `JWT_SECRET` | **Yes** | Auth token signing — use a long random string in production |
+| `CLIENT_URL` | **Yes in prod** | Frontend URL for CORS, invites, Stripe redirects |
+| `REDIS_URL` | Prod recommended | Redis for multi-instance scaling |
+| `STRIPE_SECRET_KEY` | Optional | Billing checkout |
+| `OPENAI_API_KEY` | Optional | AI mind maps & image generation |
+| `OPENAI_MODEL` | Optional | Default `gpt-4o-mini` |
+| `SMTP_*` | Optional | Real invitation emails (else logs to console) |
+| `UPLOAD_DIR` | Optional | Asset storage path (default `server/uploads`) |
+| `UPLOAD_PUBLIC_URL` | Optional | Public URL prefix for uploaded files |
+
+**Stripe price IDs** are stored in the database, not `.env`. After creating Stripe products:
+
+```sql
+UPDATE subscription_plans
+SET stripe_price_monthly_id = 'price_xxx', stripe_price_annual_id = 'price_yyy'
+WHERE slug = 'pro';
+```
+
+**Admin access** (not env-based):
+
+```sql
+INSERT INTO super_admins (user_id) SELECT id FROM users WHERE email = 'you@example.com';
+```
+
+### Client (`client/.env`)
+
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `VITE_API_URL` | **Yes** | Backend REST API URL |
+| `VITE_SOCKET_URL` | **Yes** | Socket.IO URL (usually same as API) |
+
 ## Deployment
 
 ### Backend (Railway)
@@ -93,14 +135,15 @@ Open http://localhost:5173
 1. Create a new Railway project
 2. Add **PostgreSQL** and **Redis** services
 3. Deploy the `server/` directory (or connect this repo with root directory `server`)
-4. Set environment variables:
+4. Set environment variables (see table above). Minimum for production:
    - `DATABASE_URL` — from Railway PostgreSQL
    - `REDIS_URL` — from Railway Redis
-   - `JWT_SECRET` — long random string
+   - `JWT_SECRET` — long random string (`openssl rand -hex 32`)
    - `CLIENT_URL` — your Vercel frontend URL (e.g. `https://your-app.vercel.app`)
    - `NODE_ENV=production`
-5. Run migration: `npm run db:migrate` (via Railway shell or one-off command)
-6. Note the public URL (e.g. `https://your-api.railway.app`)
+5. Optional: `STRIPE_SECRET_KEY`, `OPENAI_API_KEY`, `SMTP_*`, `UPLOAD_PUBLIC_URL`
+6. Run migration: `npm run db:migrate` (via Railway shell or one-off command)
+7. Note the public URL (e.g. `https://your-api.railway.app`)
 
 ### Frontend (Vercel)
 
@@ -114,9 +157,15 @@ Open http://localhost:5173
 ### Post-deploy checklist
 
 - [ ] `CLIENT_URL` on server matches Vercel URL exactly (no trailing slash)
+- [ ] `VITE_API_URL` and `VITE_SOCKET_URL` point to the backend URL
 - [ ] CORS allows the Vercel origin
-- [ ] Database migration has run
+- [ ] Database migration has run (`npm run db:migrate`)
 - [ ] Socket.IO connects over WSS (Railway handles TLS)
+- [ ] `JWT_SECRET` changed from the example default
+- [ ] Stripe price IDs updated in DB (if using billing)
+- [ ] `OPENAI_API_KEY` set (if using AI panel)
+- [ ] SMTP configured (if sending real invite emails)
+- [ ] Super admin row added (if using `/admin`)
 
 ## Project Structure
 
