@@ -9,108 +9,178 @@ const FEATURES = [
   {
     icon: '✏️',
     title: 'Infinite canvas',
-    description: 'Draw, sketch, and brainstorm on a limitless whiteboard with pen, shapes, text, sticky notes, and images.',
+    description: 'Pen, shapes, text, sticky notes, images — sketch without limits on a boundless whiteboard.',
+    wide: true,
   },
   {
     icon: '⚡',
     title: 'Real-time sync',
-    description: 'See teammates\' cursors and edits live. Every stroke syncs instantly across all connected browsers.',
+    description: 'Live cursors and instant stroke sync across every browser.',
+    wide: true,
   },
   {
     icon: '👥',
-    title: 'Team workspaces',
-    description: 'Organize boards by workspace with roles, invitations, and shared access for your whole team.',
+    title: 'Workspaces',
+    description: 'Roles, invites, and shared access for your team.',
   },
   {
     icon: '💬',
     title: 'Comments & chat',
-    description: 'Discuss ideas in-context with threaded comments, @mentions, and a built-in board chat.',
+    description: 'Threaded comments, @mentions, and board chat.',
   },
   {
     icon: '✅',
-    title: 'Tasks & activity',
-    description: 'Turn canvas elements into tasks, track due dates, and follow everything in the activity feed.',
+    title: 'Tasks',
+    description: 'Turn ideas into tasks with due dates and assignees.',
   },
   {
     icon: '📹',
-    title: 'Video meetings',
-    description: 'Jump into a WebRTC call right from the board sidebar — no extra app required.',
+    title: 'Video calls',
+    description: 'WebRTC meetings built into every board.',
   },
   {
     icon: '🤖',
-    title: 'AI assistant',
-    description: 'Generate mind maps and images with AI to kickstart brainstorming sessions faster.',
+    title: 'AI tools',
+    description: 'Generate mind maps and images to brainstorm faster.',
   },
   {
     icon: '🕐',
-    title: 'Version history',
-    description: 'Never lose work — restore previous board snapshots whenever you need to roll back.',
+    title: 'History',
+    description: 'Restore any previous version in one click.',
   },
 ];
 
 const STEPS = [
-  { title: 'Create a workspace', description: 'Set up a shared space for your team or project.' },
-  { title: 'Add boards', description: 'Start from blank or use templates for wireframes, retros, and more.' },
-  { title: 'Collaborate live', description: 'Invite teammates, draw together, chat, and ship ideas faster.' },
+  { title: 'Create workspace', description: 'Spin up a shared home for your team or project in seconds.' },
+  { title: 'Add boards', description: 'Blank canvas or templates — wireframes, retros, mind maps.' },
+  { title: 'Collaborate live', description: 'Draw, chat, call, and ship ideas together in real time.' },
 ];
+
+function HeroVisual() {
+  return (
+    <div className="home-hero__visual" aria-hidden>
+      <div className="home-mock-board">
+        <div className="home-mock-board__toolbar">
+          <span className="home-mock-board__dot" />
+          <span className="home-mock-board__dot" />
+          <span className="home-mock-board__dot" />
+        </div>
+        <div className="home-mock-board__canvas">
+          <div className="home-mock-sticky home-mock-sticky--yellow">Ship v2 🚀</div>
+          <div className="home-mock-sticky home-mock-sticky--pink">Ideas</div>
+          <div className="home-mock-stroke home-mock-stroke--1" />
+          <div className="home-mock-stroke home-mock-stroke--2" />
+          <div className="home-mock-cursor home-mock-cursor--1">Alex</div>
+          <div className="home-mock-cursor home-mock-cursor--2">Sam</div>
+        </div>
+      </div>
+      <div className="home-mock-float-card home-mock-float-card--live">
+        <strong>● 3 online</strong>
+        Syncing live
+      </div>
+    </div>
+  );
+}
 
 function HomeShowcase({ loggedIn }: { loggedIn: boolean }) {
   return (
-    <section className="home-showcase" aria-labelledby="home-showcase-title">
-      <div className="home-showcase__hero">
-        <span className="badge">Real-Time Collaborative Whiteboard</span>
-        <h1 id="home-showcase-title" className="home-showcase__title">
-          Your team&apos;s creative<br />command center
-        </h1>
-        <p className="home-showcase__lead">
-          <strong style={{ color: 'var(--text)', fontWeight: 600 }}>CollabBoard</strong> brings drawing,
-          planning, and communication into one place. Whether you&apos;re wireframing a product,
-          running a retro, or whiteboarding with remote teammates — everyone stays in sync.
-        </p>
-        <div className="home-showcase__actions">
-          {!loggedIn ? (
-            <>
-              <Link to="/login" className="btn-primary" style={{ width: 'auto', padding: '0.75rem 1.75rem' }}>
-                Get started free
-              </Link>
-              <Link to="/gallery" className="btn-ghost">Explore gallery</Link>
-            </>
-          ) : (
-            <a href="#dashboard" className="btn-primary" style={{ width: 'auto', padding: '0.75rem 1.75rem' }}>
-              Go to your workspaces ↓
-            </a>
-          )}
-        </div>
-        <div className="feature-pills" style={{ marginTop: '1.75rem' }}>
-          {['Live cursors', 'WebRTC calls', 'AI tools', 'Slack integration', 'PWA ready'].map((f) => (
-            <span key={f} className="feature-pill">{f}</span>
-          ))}
-        </div>
-      </div>
+    <div className="home-page">
+      <section className="home-showcase" aria-labelledby="home-hero-title">
+        <div className="home-hero">
+          <div className="home-hero__glow home-hero__glow--purple" />
+          <div className="home-hero__glow home-hero__glow--cyan" />
 
-      <div className="home-features">
-        {FEATURES.map((f) => (
-          <article key={f.title} className="home-feature-card">
-            <span className="home-feature-card__icon" aria-hidden>{f.icon}</span>
-            <h3>{f.title}</h3>
-            <p>{f.description}</p>
-          </article>
-        ))}
-      </div>
+          <div className="home-hero__copy">
+            <div className="home-hero__eyebrow">
+              <span className="home-hero__eyebrow-dot" />
+              Real-Time Collaborative Whiteboard
+            </div>
 
-      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', fontWeight: 700, marginBottom: '1rem', letterSpacing: '-0.01em' }}>
-        How it works
-      </h2>
-      <div className="home-steps">
-        {STEPS.map((step, i) => (
-          <div key={step.title} className="home-step">
-            <span className="home-step__num">{i + 1}</span>
-            <h4>{step.title}</h4>
-            <p>{step.description}</p>
+            <h1 id="home-hero-title" className="home-hero__title">
+              <span className="home-hero__title-line">Think bigger.</span>
+              <span className="home-hero__title-accent">Build together.</span>
+            </h1>
+
+            <p className="home-hero__lead">
+              <strong>CollabBoard</strong> is the all-in-one canvas where remote teams sketch,
+              plan, chat, and meet — without switching between a dozen different tools.
+            </p>
+
+            <div className="home-hero__actions">
+              {!loggedIn ? (
+                <>
+                  <Link to="/login" className="btn-primary home-btn-glow" style={{ width: 'auto' }}>
+                    Start for free →
+                  </Link>
+                  <Link to="/gallery" className="home-btn-outline">
+                    Browse gallery
+                  </Link>
+                </>
+              ) : (
+                <a href="#dashboard" className="btn-primary home-btn-glow" style={{ width: 'auto' }}>
+                  Open dashboard ↓
+                </a>
+              )}
+            </div>
+
+            <div className="home-hero__stats">
+              <div className="home-hero__stat">
+                <span className="home-hero__stat-value">Live</span>
+                <span className="home-hero__stat-label">Multiplayer sync</span>
+              </div>
+              <div className="home-hero__stat">
+                <span className="home-hero__stat-value">8+</span>
+                <span className="home-hero__stat-label">Built-in tools</span>
+              </div>
+              <div className="home-hero__stat">
+                <span className="home-hero__stat-value">∞</span>
+                <span className="home-hero__stat-label">Canvas size</span>
+              </div>
+            </div>
           </div>
-        ))}
-      </div>
-    </section>
+
+          <HeroVisual />
+        </div>
+
+        <div className="home-section">
+          <span className="home-section__label">Everything included</span>
+          <h2 className="home-section__title">One platform. Every workflow.</h2>
+          <p className="home-section__desc">
+            From solo brainstorming to full-team sprints — CollabBoard packs drawing,
+            communication, and project tools into a single beautiful experience.
+          </p>
+
+          <div className="home-bento">
+            {FEATURES.map((f) => (
+              <article
+                key={f.title}
+                className={`home-bento-card${f.wide ? ' home-bento-card--wide' : ''}`}
+              >
+                <div className="home-bento-card__icon-wrap" aria-hidden>{f.icon}</div>
+                <h3>{f.title}</h3>
+                <p>{f.description}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        <div className="home-section">
+          <span className="home-section__label">Get started</span>
+          <h2 className="home-section__title">Up and running in 3 steps</h2>
+          <p className="home-section__desc">No complex setup. Create, invite, and start drawing in under a minute.</p>
+
+          <div className="home-timeline">
+            {STEPS.map((step, i) => (
+              <div key={step.title} className="home-timeline-step">
+                <span className="home-timeline-step__orb">{i + 1}</span>
+                <h4>{step.title}</h4>
+                <p>{step.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -131,55 +201,54 @@ function WorkspaceDashboard({
 }) {
   return (
     <section id="dashboard" className="home-dashboard">
-      <div className="home-dashboard__divider">Your dashboard</div>
+      <div className="home-dashboard__zone">
+        <span className="home-dashboard__badge">✦ Your dashboard</span>
 
-      <header className="home-dashboard__header">
-        <h2>Your Workspaces</h2>
-        <p>Pick a workspace or create a new one to start collaborating</p>
-      </header>
+        <header className="home-dashboard__header">
+          <h2>Your Workspaces</h2>
+          <p>Jump into an existing workspace or create a new one for your team</p>
+        </header>
 
-      <form onSubmit={onCreate} className="glass-card home-create-form">
-        <input
-          type="text"
-          value={newWorkspaceName}
-          onChange={(e) => setNewWorkspaceName(e.target.value)}
-          placeholder="New workspace name..."
-          className="input-field"
-          required
-        />
-        <button type="submit" disabled={loading} className="btn-primary" style={{ width: 'auto', flexShrink: 0 }}>
-          {loading ? 'Creating...' : '+ Create workspace'}
-        </button>
-      </form>
+        <form onSubmit={onCreate} className="home-create-form">
+          <input
+            type="text"
+            value={newWorkspaceName}
+            onChange={(e) => setNewWorkspaceName(e.target.value)}
+            placeholder="Name your new workspace..."
+            className="input-field"
+            required
+          />
+          <button type="submit" disabled={loading} className="btn-primary home-btn-glow" style={{ width: 'auto', flexShrink: 0 }}>
+            {loading ? 'Creating...' : '+ Create workspace'}
+          </button>
+        </form>
 
-      {error && <p style={{ color: 'var(--danger)', fontSize: '0.875rem', marginBottom: '1rem' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--danger)', fontSize: '0.875rem', marginBottom: '1.25rem' }}>{error}</p>}
 
-      {workspaces.length > 0 ? (
-        <div className="home-workspace-grid">
-          {workspaces.map((ws) => (
-            <Link
-              key={ws.id}
-              to={`/workspace/${ws.id}`}
-              className="glass-card glass-card-interactive home-workspace-card"
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                <div className="workspace-avatar">{ws.name.charAt(0).toUpperCase()}</div>
-                <div>
-                  <h3 style={{ fontWeight: 600, fontSize: '1rem' }}>{ws.name}</h3>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'capitalize', marginTop: '0.15rem' }}>
-                    {ws.role} workspace
-                  </p>
+        {workspaces.length > 0 ? (
+          <div className="home-workspace-grid">
+            {workspaces.map((ws) => (
+              <Link key={ws.id} to={`/workspace/${ws.id}`} className="home-workspace-card">
+                <div className="home-workspace-card__inner">
+                  <div className="workspace-avatar">{ws.name.charAt(0).toUpperCase()}</div>
+                  <div style={{ minWidth: 0 }}>
+                    <h3>{ws.name}</h3>
+                    <p className="home-workspace-card__role">{ws.role} workspace</p>
+                  </div>
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      ) : (
-        <div className="glass-card" style={{ padding: '3rem', textAlign: 'center' }}>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }}>No workspaces yet</p>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Create your first workspace above to get started.</p>
-        </div>
-      )}
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="home-empty-state">
+            <div className="home-empty-state__icon">🏢</div>
+            <p style={{ fontWeight: 600, marginBottom: '0.35rem' }}>No workspaces yet</p>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+              Create your first workspace above to start collaborating.
+            </p>
+          </div>
+        )}
+      </div>
     </section>
   );
 }
