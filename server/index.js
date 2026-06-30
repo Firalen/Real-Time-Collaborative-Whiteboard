@@ -54,11 +54,26 @@ function isOriginAllowed(origin) {
   return false;
 }
 
+const corsOptions = {
+  origin(origin, callback) {
+    if (isOriginAllowed(origin)) {
+      callback(null, origin || true);
+    } else {
+      console.warn('CORS blocked origin:', origin, '| allowed:', allowedOrigins);
+      callback(null, false);
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 204,
+};
+
 const io = new Server(server, {
   cors: {
-    origin: (origin, callback) => {
-      if (isOriginAllowed(origin)) callback(null, true);
-      else callback(new Error('Not allowed by CORS'));
+    origin(origin, callback) {
+      if (isOriginAllowed(origin)) callback(null, origin || true);
+      else callback(null, false);
     },
     methods: ['GET', 'POST'],
     credentials: true,
@@ -68,20 +83,14 @@ const io = new Server(server, {
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
-app.use(cors({
-  origin: (origin, callback) => {
-    if (isOriginAllowed(origin)) {
-      callback(null, true);
-    } else {
-      console.warn('CORS blocked origin:', origin, '| allowed:', allowedOrigins);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-}));
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use('/uploads', express.static(UPLOAD_DIR));
-app.use('/api', apiLimiter);
+app.use('/api', (req, res, next) => {
+  if (req.method === 'OPTIONS') return next();
+  return apiLimiter(req, res, next);
+});
 
 app.get('/health', async (_req, res) => {
   const health = { status: 'ok', timestamp: new Date().toISOString(), db: 'unknown' };
