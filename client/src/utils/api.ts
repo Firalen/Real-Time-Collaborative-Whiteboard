@@ -212,12 +212,18 @@ export const api = {
   getChat: (token: string, boardId: string) =>
     request<import('../types/saas').ChatMessage[]>(`/api/boards/${boardId}/chat`, { token }),
 
-  sendChat: (token: string, boardId: string, content: string) =>
+  sendChat: (token: string, boardId: string, content: string, parentId?: string) =>
     request<import('../types/saas').ChatMessage>(`/api/boards/${boardId}/chat`, {
       method: 'POST',
       token,
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ content, parentId }),
     }),
+
+  toggleChatReaction: (token: string, boardId: string, messageId: string, emoji: string) =>
+    request<{ messageId: string; boardId: string; reactions: Record<string, string[]> }>(
+      `/api/boards/${boardId}/chat/${messageId}/reactions`,
+      { method: 'POST', token, body: JSON.stringify({ emoji }) },
+    ),
 
   // Board tasks
   getBoardTasks: (token: string, boardId: string) =>

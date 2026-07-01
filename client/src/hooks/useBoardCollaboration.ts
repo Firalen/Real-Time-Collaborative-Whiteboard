@@ -64,14 +64,26 @@ export function useBoardCollaboration(
     );
   };
 
-  const sendChat = async (content: string, emitSocket?: (c: string) => void) => {
+  const sendChat = async (
+    content: string,
+    parentId?: string,
+    emitSocket?: (content: string, parentId?: string) => void,
+  ) => {
     if (!token) return;
     if (emitSocket) {
-      emitSocket(content);
+      emitSocket(content, parentId);
       return;
     }
-    const msg = await api.sendChat(token, boardId, content);
+    const msg = await api.sendChat(token, boardId, content, parentId);
     setChatMessages((prev) => [...prev, msg]);
+  };
+
+  const toggleChatReaction = async (messageId: string, emoji: string) => {
+    if (!token) return;
+    const result = await api.toggleChatReaction(token, boardId, messageId, emoji);
+    setChatMessages((prev) =>
+      prev.map((m) => (m.id === messageId ? { ...m, reactions: result.reactions } : m)),
+    );
   };
 
   const onRemoteComment = (comment: Comment) => {
@@ -86,6 +98,12 @@ export function useBoardCollaboration(
       if (prev.some((m) => m.id === message.id)) return prev;
       return [...prev, message];
     });
+  };
+
+  const onRemoteChatReaction = (payload: { messageId: string; reactions: Record<string, string[]> }) => {
+    setChatMessages((prev) =>
+      prev.map((m) => (m.id === payload.messageId ? { ...m, reactions: payload.reactions } : m)),
+    );
   };
 
   const createTask = async (data: {
@@ -141,8 +159,10 @@ export function useBoardCollaboration(
     addComment,
     resolveComment,
     sendChat,
+    toggleChatReaction,
     onRemoteComment,
     onRemoteChat,
+    onRemoteChatReaction,
     createTask,
     updateTaskStatus,
     restoreVersion,

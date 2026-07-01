@@ -81,6 +81,8 @@ export interface ChatMessage {
   userName?: string;
   avatarColor?: string;
   content: string;
+  parentId?: string;
+  reactions?: Record<string, string[]>;
   createdAt: string;
 }
 

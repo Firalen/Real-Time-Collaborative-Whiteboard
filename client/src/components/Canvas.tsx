@@ -12,6 +12,7 @@ import BoardSidebar from './board/BoardSidebar';
 import LayersPanel from './canvas/LayersPanel';
 import ViewportControls from './canvas/ViewportControls';
 import AiPanel from './canvas/AiPanel';
+import FloatingChatDock from './board/FloatingChatDock';
 import KeyboardShortcuts from './canvas/KeyboardShortcuts';
 import ToastContainer from './ToastContainer';
 import { useCanvasViewport } from '../hooks/useCanvasViewport';
@@ -83,7 +84,7 @@ export default function Canvas({ boardId, board, viewOnly = false }: CanvasProps
 
   const {
     connectionStatus, cursors, onlineUsers, socketRef,
-    emitDraw, emitCursorMove, saveCanvas, emitChat,
+    emitDraw, emitCursorMove, saveCanvas,
   } = useSocket({
     boardId, token, guestName: user?.name, viewOnly,
     onBoardState: (canvasData) => loadCanvasData(canvasData),
@@ -99,6 +100,7 @@ export default function Canvas({ boardId, board, viewOnly = false }: CanvasProps
     onError: (message) => showToast(message, 'error'),
     onCommentAdded: collab.onRemoteComment,
     onChatMessage: collab.onRemoteChat,
+    onChatReaction: collab.onRemoteChatReaction,
   });
 
   emitDrawRef.current = emitDraw;
@@ -222,7 +224,6 @@ export default function Canvas({ boardId, board, viewOnly = false }: CanvasProps
         lastSaved={lastSaved}
         viewOnly={viewOnly}
         comments={collab.comments}
-        chatMessages={collab.chatMessages}
         tasks={collab.tasks}
         activity={collab.activity}
         versions={collab.versions}
@@ -230,7 +231,6 @@ export default function Canvas({ boardId, board, viewOnly = false }: CanvasProps
         selectedElementId={collab.selectedElementId}
         onAddComment={(content, mentionIds) => collab.addComment(content, mentionIds)}
         onResolveComment={collab.resolveComment}
-        onSendChat={(content) => collab.sendChat(content, emitChat)}
         onCreateTask={(data) => collab.createTask(data)}
         onUpdateTask={collab.updateTaskStatus}
         onRestoreVersion={handleRestoreVersion}
@@ -346,6 +346,15 @@ export default function Canvas({ boardId, board, viewOnly = false }: CanvasProps
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <KeyboardShortcuts open={showShortcuts} onClose={() => setShowShortcuts(false)} />
+
+      <FloatingChatDock
+        messages={collab.chatMessages}
+        viewOnly={viewOnly || !token}
+        onlineCount={onlineUsers.length}
+        currentUserId={user?.id}
+        onSend={(content, parentId) => collab.sendChat(content, parentId)}
+        onReact={(messageId, emoji) => collab.toggleChatReaction(messageId, emoji)}
+      />
     </div>
   );
 }

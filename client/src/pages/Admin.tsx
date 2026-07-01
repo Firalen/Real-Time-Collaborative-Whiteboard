@@ -3,7 +3,15 @@ import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
 import AppLayout from '../components/AppLayout';
+import LiveDot from '../components/ui/LiveDot';
 import type { AdminMetrics, AdminWorkspace } from '../types/enterprise';
+
+const STATS = [
+  { key: 'totalUsers' as const, label: 'Total users', icon: '👥' },
+  { key: 'totalWorkspaces' as const, label: 'Workspaces', icon: '🏢' },
+  { key: 'totalBoards' as const, label: 'Boards', icon: '📋' },
+  { key: 'dau' as const, label: 'DAU', icon: '📈' },
+];
 
 export default function AdminPage() {
   const { token } = useAuth();
@@ -34,26 +42,28 @@ export default function AdminPage() {
   return (
     <AppLayout>
       <div className="page-wrap">
-        <header className="page-header">
-          <span className="badge">Platform</span>
-          <h1 className="page-title" style={{ marginTop: '0.5rem' }}>Admin Dashboard</h1>
-          <p className="page-subtitle">CollabBoard platform metrics and workspace overview</p>
+        <header className="ds-page-hero">
+          <span className="ds-badge">Platform</span>
+          <h1 className="ds-page-title">Admin Dashboard</h1>
+          <p className="ds-page-subtitle">
+            CollabBoard platform metrics and workspace overview
+          </p>
+          {metrics && (
+            <div style={{ marginTop: '1rem' }}>
+              <LiveDot label="Platform live" pulse />
+            </div>
+          )}
         </header>
 
         {loading && <p style={{ color: 'var(--text-muted)' }}>Loading...</p>}
 
         {metrics && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}>
-            {[
-              { label: 'Total users', value: metrics.totalUsers, icon: '👥' },
-              { label: 'Workspaces', value: metrics.totalWorkspaces, icon: '🏢' },
-              { label: 'Boards', value: metrics.totalBoards, icon: '📋' },
-              { label: 'DAU', value: metrics.dau, icon: '📈' },
-            ].map((stat) => (
-              <div key={stat.label} className="stat-card">
-                <span style={{ fontSize: '1.5rem' }}>{stat.icon}</span>
-                <p className="stat-card__value">{stat.value.toLocaleString()}</p>
-                <p className="stat-card__label">{stat.label}</p>
+          <div className="ds-stat-grid">
+            {STATS.map((stat) => (
+              <div key={stat.key} className="ds-stat-card">
+                <span className="ds-stat-card__icon">{stat.icon}</span>
+                <p className="ds-stat-card__value">{metrics[stat.key].toLocaleString()}</p>
+                <p className="ds-stat-card__label">{stat.label}</p>
               </div>
             ))}
           </div>
@@ -61,26 +71,30 @@ export default function AdminPage() {
 
         {workspaces.length > 0 && (
           <>
-            <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem' }}>Workspaces</h2>
-            <div className="glass-card" style={{ overflow: 'hidden' }}>
-              <table style={{ width: '100%', fontSize: '0.875rem', borderCollapse: 'collapse' }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-lg)', fontWeight: 700, letterSpacing: 'var(--tracking-snug)', marginBottom: '1rem' }}>
+              Workspaces
+            </h2>
+            <div className="glass-card glass-panel" style={{ overflow: 'hidden', padding: 0 }}>
+              <table className="ds-data-table">
                 <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)', textAlign: 'left' }}>
-                    <th style={{ padding: '0.85rem 1.25rem', fontWeight: 500 }}>Name</th>
-                    <th style={{ padding: '0.85rem 1.25rem', fontWeight: 500 }}>Plan</th>
-                    <th style={{ padding: '0.85rem 1.25rem', fontWeight: 500 }}>Members</th>
-                    <th style={{ padding: '0.85rem 1.25rem', fontWeight: 500 }}>Created</th>
+                  <tr>
+                    <th>Name</th>
+                    <th>Plan</th>
+                    <th>Members</th>
+                    <th>Created</th>
                   </tr>
                 </thead>
                 <tbody>
                   {workspaces.map((ws) => (
-                    <tr key={ws.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ padding: '0.85rem 1.25rem' }}>
-                        <Link to={`/workspace/${ws.id}`} style={{ fontWeight: 500 }}>{ws.name}</Link>
+                    <tr key={ws.id}>
+                      <td>
+                        <Link to={`/workspace/${ws.id}`} style={{ fontWeight: 500, color: 'var(--primary-hover)' }}>
+                          {ws.name}
+                        </Link>
                       </td>
-                      <td style={{ padding: '0.85rem 1.25rem' }}><span className="badge">{ws.plan_slug || 'free'}</span></td>
-                      <td style={{ padding: '0.85rem 1.25rem' }}>{ws.member_count}</td>
-                      <td style={{ padding: '0.85rem 1.25rem', color: 'var(--text-muted)' }}>
+                      <td><span className="ds-badge">{ws.plan_slug || 'free'}</span></td>
+                      <td>{ws.member_count}</td>
+                      <td style={{ color: 'var(--text-muted)' }}>
                         {new Date(ws.created_at).toLocaleDateString()}
                       </td>
                     </tr>

@@ -3,12 +3,12 @@ import { Link } from 'react-router-dom';
 import { googleCalendarUrl } from '../../utils/calendar';
 import type { OnlineUser, Board } from '../../types';
 import type { ConnectionStatus } from '../../hooks/useSocket';
-import type { Comment, ChatMessage, Task, ActivityItem, BoardVersion, WorkspaceMember } from '../../types/saas';
+import type { Comment, Task, ActivityItem, BoardVersion, WorkspaceMember } from '../../types/saas';
 
 import MeetingPanel from './MeetingPanel';
 import type { RemotePeer } from '../../hooks/useWebRTC';
 
-export type SidebarTab = 'share' | 'chat' | 'comments' | 'tasks' | 'activity' | 'history' | 'meeting';
+export type SidebarTab = 'share' | 'comments' | 'tasks' | 'activity' | 'history' | 'meeting';
 
 interface BoardSidebarProps {
   board: Board;
@@ -17,7 +17,6 @@ interface BoardSidebarProps {
   lastSaved: string | null;
   viewOnly: boolean;
   comments: Comment[];
-  chatMessages: ChatMessage[];
   tasks: Task[];
   activity: ActivityItem[];
   versions: BoardVersion[];
@@ -25,7 +24,6 @@ interface BoardSidebarProps {
   selectedElementId: string | null;
   onAddComment: (content: string, mentionIds: string[]) => void;
   onResolveComment: (id: string) => void;
-  onSendChat: (content: string) => void;
   onCreateTask: (data: { title: string; elementId?: string; assignedTo?: string; dueDate?: string }) => void;
   onUpdateTask: (id: string, status: Task['status']) => void;
   onRestoreVersion: (versionId: string) => void;
@@ -50,7 +48,6 @@ interface BoardSidebarProps {
 
 const TABS: { id: SidebarTab; label: string; icon: string }[] = [
   { id: 'share', label: 'Share', icon: '🔗' },
-  { id: 'chat', label: 'Chat', icon: '💬' },
   { id: 'comments', label: 'Comments', icon: '🗨️' },
   { id: 'tasks', label: 'Tasks', icon: '✅' },
   { id: 'activity', label: 'Activity', icon: '📋' },
@@ -61,7 +58,6 @@ const TABS: { id: SidebarTab; label: string; icon: string }[] = [
 export default function BoardSidebar(props: BoardSidebarProps) {
   const [tab, setTab] = useState<SidebarTab>('share');
   const [commentText, setCommentText] = useState('');
-  const [chatText, setChatText] = useState('');
   const [taskTitle, setTaskTitle] = useState('');
   const [taskAssignee, setTaskAssignee] = useState('');
   const [taskDue, setTaskDue] = useState('');
@@ -78,13 +74,6 @@ export default function BoardSidebar(props: BoardSidebarProps) {
     if (!commentText.trim()) return;
     props.onAddComment(commentText.trim(), props.parseMentions(commentText));
     setCommentText('');
-  };
-
-  const handleChat = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatText.trim()) return;
-    props.onSendChat(chatText.trim());
-    setChatText('');
   };
 
   const handleTask = (e: React.FormEvent) => {
@@ -200,25 +189,6 @@ export default function BoardSidebar(props: BoardSidebarProps) {
                 </li>
               ))}
             </ul>
-          </div>
-        )}
-
-        {tab === 'chat' && (
-          <div className="panel-content panel-scroll">
-            <div className="chat-messages">
-              {props.chatMessages.map((m) => (
-                <div key={m.id} className="chat-bubble">
-                  <span className="chat-author" style={{ color: m.avatarColor || '#818cf8' }}>{m.userName}</span>
-                  <p>{m.content}</p>
-                </div>
-              ))}
-            </div>
-            {!props.viewOnly && (
-              <form onSubmit={handleChat} className="panel-form">
-                <input value={chatText} onChange={(e) => setChatText(e.target.value)} placeholder="Message..." />
-                <button type="submit">Send</button>
-              </form>
-            )}
           </div>
         )}
 

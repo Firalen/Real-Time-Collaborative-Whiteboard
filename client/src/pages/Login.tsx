@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import BrandLogo from '../components/BrandLogo';
 
 export default function Login() {
@@ -12,6 +13,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   const { login, register } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,7 +36,11 @@ export default function Login() {
   };
 
   return (
-    <div className="auth-page">
+    <div className="auth-page auth-page--premium">
+      <button type="button" className="auth-theme-toggle" onClick={toggleTheme}>
+        {theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
+      </button>
+
       <aside className="auth-brand-panel">
         <BrandLogo size="lg" showTagline linkToHome={false} />
         <h2>Where teams think visually</h2>
@@ -50,7 +56,7 @@ export default function Login() {
       </aside>
 
       <div className="auth-form-panel">
-        <div className="auth-card">
+        <div className="auth-card glass-panel glass-panel--glow">
           <BrandLogo size="sm" showTagline linkToHome={false} />
           <p className="auth-subtitle" style={{ marginTop: '1rem' }}>
             {isRegister ? 'Create your CollabBoard account' : 'Welcome back'}
@@ -98,7 +104,7 @@ export default function Login() {
 
             {error && <p className="error-msg">{error}</p>}
 
-            <button type="submit" className="btn-primary" disabled={loading} style={{ marginTop: '0.5rem' }}>
+            <button type="submit" className="btn-primary btn-gradient" disabled={loading} style={{ marginTop: '0.5rem', width: '100%' }}>
               {loading ? 'Please wait...' : isRegister ? 'Create Account' : 'Sign In'}
             </button>
           </form>

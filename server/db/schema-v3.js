@@ -366,4 +366,9 @@ module.exports = `
   CREATE INDEX IF NOT EXISTS idx_template_marketplace_cat ON template_marketplace(category) WHERE published = true;
   CREATE INDEX IF NOT EXISTS idx_sync_queue_user ON sync_queue(user_id, synced) WHERE synced = false;
   CREATE INDEX IF NOT EXISTS idx_users_google ON users(google_id) WHERE google_id IS NOT NULL;
+
+  -- ─── Chat threading & reactions ───────────────────────────────
+  ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS parent_id UUID REFERENCES chat_messages(id) ON DELETE CASCADE;
+  ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS reactions JSONB DEFAULT '{}';
+  CREATE INDEX IF NOT EXISTS idx_chat_parent ON chat_messages(parent_id) WHERE parent_id IS NOT NULL;
 `;

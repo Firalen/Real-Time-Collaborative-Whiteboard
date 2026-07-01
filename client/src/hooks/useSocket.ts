@@ -17,6 +17,7 @@ interface UseSocketOptions {
   onError?: (message: string) => void;
   onCommentAdded?: (comment: Comment) => void;
   onChatMessage?: (message: ChatMessage) => void;
+  onChatReaction?: (payload: { messageId: string; reactions: Record<string, string[]> }) => void;
   viewOnly?: boolean;
 }
 
@@ -30,6 +31,7 @@ export function useSocket({
   onError,
   onCommentAdded,
   onChatMessage,
+  onChatReaction,
   viewOnly = false,
 }: UseSocketOptions) {
   const socketRef = useRef<Socket | null>(null);
@@ -43,12 +45,14 @@ export function useSocket({
   const onErrorRef = useRef(onError);
   const onCommentRef = useRef(onCommentAdded);
   const onChatRef = useRef(onChatMessage);
+  const onChatReactionRef = useRef(onChatReaction);
   onBoardStateRef.current = onBoardState;
   onUserDrewRef.current = onUserDrew;
   onCanvasSavedRef.current = onCanvasSaved;
   onErrorRef.current = onError;
   onCommentRef.current = onCommentAdded;
   onChatRef.current = onChatMessage;
+  onChatReactionRef.current = onChatReaction;
 
   useEffect(() => {
     const guestId = crypto.randomUUID();
@@ -105,6 +109,10 @@ export function useSocket({
       onChatRef.current?.(message);
     });
 
+    socket.on('chat-reaction', (payload: { messageId: string; reactions: Record<string, string[]> }) => {
+      onChatReactionRef.current?.(payload);
+    });
+
     socket.on('cursor-update', (data: CursorState) => {
       setCursors((prev) => {
         const next = new Map(prev);
@@ -151,8 +159,12 @@ export function useSocket({
     socketRef.current?.emit('save-canvas', { canvasData });
   }, []);
 
-  const emitChat = useCallback((content: string) => {
-    socketRef.current?.emit('chat-message', { content });
+  const emitChat = useCallback((content: string, parentId?: string) => {
+    socketRef.current?.emit('chat-message', { content, parentId });
+  }, []);
+
+  const emitChatReaction = useCallback((messageId: string, emoji: string) => {
+    socketRef.current?.emit('chat-reaction', { messageId, emoji });
   }, []);
 
   return {
@@ -165,6 +177,7 @@ export function useSocket({
     emitCursorMove,
     saveCanvas,
     emitChat,
+    emitChatReaction,
     viewOnly,
   };
 }

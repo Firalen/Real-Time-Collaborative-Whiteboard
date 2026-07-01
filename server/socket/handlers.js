@@ -178,15 +178,21 @@ function registerSocketHandlers(io) {
       socket.to(currentBoardId).emit('webrtc-peer-left', { userId });
     });
 
-    socket.on('chat-message', async ({ content }) => {
+    socket.on('chat-message', async ({ content, parentId }) => {
       if (!currentBoardId || !tokenUser) return;
       if (!content?.trim()) return;
 
       const Chat = require('../models/Chat');
+      if (parentId) {
+        const parent = await Chat.findById(parentId);
+        if (!parent || parent.board_id !== currentBoardId) return;
+      }
+
       const message = await Chat.create({
         boardId: currentBoardId,
         userId,
         content: content.trim(),
+        parentId: parentId || null,
       });
 
       const user = await User.findById(userId);
@@ -197,7 +203,26 @@ function registerSocketHandlers(io) {
         userName: user?.name || displayName,
         avatarColor: user?.avatar_color || avatarColor,
         content: message.content,
+        parentId: message.parent_id || undefined,
+        reactions: message.reactions || {},
         createdAt: message.created_at,
+      });
+    });
+
+    socket.on('chat-reaction', async ({ messageId, emoji }) => {
+      if (!currentBoardId || !tokenUser || !messageId || !emoji) return;
+
+      const Chat = require('../models/Chat');
+      const existing = await Chat.findById(messageId);
+      if (!existing || existing.board_id !== currentBoardId) return;
+
+      const updated = await Chat.toggleReaction(messageId, userId, emoji);
+      if (!updated) return;
+
+      socket.to(currentBoardId).emit('chat-reaction', {
+        messageId: updated.id,
+        boardId: currentBoardId,
+        reactions: updated.reactions || {},
       });
     });
 
