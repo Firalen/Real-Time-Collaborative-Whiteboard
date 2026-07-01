@@ -76,7 +76,12 @@ async function createCheckoutSession({ workspaceId, planSlug, billingCycle, succ
   const priceId = billingCycle === 'annual'
     ? plan.stripe_price_annual_id
     : plan.stripe_price_monthly_id;
-  if (!priceId) throw new Error('Stripe price not configured for this plan');
+  if (!priceId) {
+    throw new Error(
+      `Stripe price not configured for plan "${planSlug}" (${billingCycle}). ` +
+      'Run: cd server && npm run stripe:sync (with STRIPE_SECRET_KEY and DATABASE_URL set).',
+    );
+  }
 
   const Stripe = require('stripe');
   const stripe = new Stripe(STRIPE_KEY);

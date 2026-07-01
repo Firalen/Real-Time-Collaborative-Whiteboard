@@ -7,7 +7,8 @@
     "start": "node index.js",
     "dev": "node --watch index.js",
     "test": "node --test __tests__/**/*.test.js",
-    "db:migrate": "node db/migrate.js"
+    "db:migrate": "node db/migrate.js",
+    "stripe:sync": "node scripts/sync-stripe-plans.js"
   },
   "engines": {
     "node": ">=18"
@@ -24,6 +25,7 @@
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.10.1",
     "pg": "^8.13.1",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "stripe": "^17.7.0"
   }
 }
