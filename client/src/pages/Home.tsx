@@ -3,57 +3,66 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
 import AppLayout from '../components/AppLayout';
+import LiveDot from '../components/ui/LiveDot';
 import type { Workspace } from '../types/saas';
 
 const FEATURES = [
   {
     icon: '✏️',
+    tag: 'Canvas',
     title: 'Infinite canvas',
     description: 'Pen, shapes, text, sticky notes, images — sketch without limits on a boundless whiteboard.',
-    wide: true,
+    spotlight: true,
   },
   {
     icon: '⚡',
+    tag: 'Live',
     title: 'Real-time sync',
     description: 'Live cursors and instant stroke sync across every browser.',
-    wide: true,
+    spotlight: true,
   },
   {
     icon: '👥',
+    tag: 'Team',
     title: 'Workspaces',
     description: 'Roles, invites, and shared access for your team.',
   },
   {
     icon: '💬',
+    tag: 'Chat',
     title: 'Comments & chat',
-    description: 'Threaded comments, @mentions, and board chat.',
+    description: 'Threaded comments, @mentions, and floating board chat with reactions.',
   },
   {
     icon: '✅',
+    tag: 'Ship',
     title: 'Tasks',
     description: 'Turn ideas into tasks with due dates and assignees.',
   },
   {
     icon: '📹',
+    tag: 'Meet',
     title: 'Video calls',
     description: 'WebRTC meetings built into every board.',
   },
   {
     icon: '🤖',
+    tag: 'AI',
     title: 'AI tools',
     description: 'Generate mind maps and images to brainstorm faster.',
   },
   {
     icon: '🕐',
+    tag: 'Safe',
     title: 'History',
     description: 'Restore any previous version in one click.',
   },
 ];
 
 const STEPS = [
-  { title: 'Create workspace', description: 'Spin up a shared home for your team or project in seconds.' },
-  { title: 'Add boards', description: 'Blank canvas or templates — wireframes, retros, mind maps.' },
-  { title: 'Collaborate live', description: 'Draw, chat, call, and ship ideas together in real time.' },
+  { icon: '🏢', title: 'Create workspace', description: 'Spin up a shared home for your team or project in seconds.' },
+  { icon: '📋', title: 'Add boards', description: 'Blank canvas or templates — wireframes, retros, mind maps.' },
+  { icon: '🚀', title: 'Collaborate live', description: 'Draw, chat, call, and ship ideas together in real time.' },
 ];
 
 function HeroVisual() {
@@ -142,43 +151,69 @@ function HomeShowcase({ loggedIn }: { loggedIn: boolean }) {
           <HeroVisual />
         </div>
 
-        <div className="home-section">
-          <span className="home-section__label">Everything included</span>
-          <h2 className="home-section__title">One platform. Every workflow.</h2>
-          <p className="home-section__desc">
-            From solo brainstorming to full-team sprints — CollabBoard packs drawing,
-            communication, and project tools into a single beautiful experience.
-          </p>
+        <div className="home-premium-divider" aria-hidden />
 
-          <div className="home-bento">
-            {FEATURES.map((f) => (
-              <article
-                key={f.title}
-                className={`home-bento-card${f.wide ? ' home-bento-card--wide' : ''}`}
-              >
-                <div className="home-bento-card__icon-wrap" aria-hidden>{f.icon}</div>
-                <h3>{f.title}</h3>
-                <p>{f.description}</p>
+        <section className="home-premium-block">
+          <header className="home-premium-block__head">
+            <span className="ds-badge">Everything included</span>
+            <h2 className="home-premium-block__title">One platform. Every workflow.</h2>
+            <p className="home-premium-block__desc">
+              From solo brainstorming to full-team sprints — drawing, communication,
+              and project tools in a single, beautiful workspace.
+            </p>
+          </header>
+
+          <div className="home-feature-showcase">
+            <div className="home-feature-spotlight">
+              {FEATURES.filter((f) => f.spotlight).map((f) => (
+                <article key={f.title} className="home-feature-spotlight__card glass-panel glass-panel--glow">
+                  <span className="home-feature-card__tag">{f.tag}</span>
+                  <div className="home-feature-spotlight__icon" aria-hidden>{f.icon}</div>
+                  <h3>{f.title}</h3>
+                  <p>{f.description}</p>
+                  <div className="home-feature-spotlight__shine" aria-hidden />
+                </article>
+              ))}
+            </div>
+
+            <div className="home-feature-grid">
+              {FEATURES.filter((f) => !f.spotlight).map((f) => (
+                <article key={f.title} className="home-feature-card glass-panel">
+                  <div className="home-feature-card__top">
+                    <div className="home-feature-card__icon" aria-hidden>{f.icon}</div>
+                    <span className="home-feature-card__tag">{f.tag}</span>
+                  </div>
+                  <h3>{f.title}</h3>
+                  <p>{f.description}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="home-premium-block home-premium-block--steps">
+          <header className="home-premium-block__head home-premium-block__head--center">
+            <span className="ds-badge">Get started</span>
+            <h2 className="home-premium-block__title">Up and running in 3 steps</h2>
+            <p className="home-premium-block__desc">
+              No complex setup. Create, invite, and start drawing in under a minute.
+            </p>
+          </header>
+
+          <div className="home-steps">
+            {STEPS.map((step, i) => (
+              <article key={step.title} className="home-step-card glass-panel">
+                <div className="home-step-card__track" aria-hidden>
+                  <span className="home-step-card__node">{i + 1}</span>
+                  {i < STEPS.length - 1 && <span className="home-step-card__line" />}
+                </div>
+                <div className="home-step-card__icon" aria-hidden>{step.icon}</div>
+                <h4>{step.title}</h4>
+                <p>{step.description}</p>
               </article>
             ))}
           </div>
-        </div>
-
-        <div className="home-section">
-          <span className="home-section__label">Get started</span>
-          <h2 className="home-section__title">Up and running in 3 steps</h2>
-          <p className="home-section__desc">No complex setup. Create, invite, and start drawing in under a minute.</p>
-
-          <div className="home-timeline">
-            {STEPS.map((step, i) => (
-              <div key={step.title} className="home-timeline-step">
-                <span className="home-timeline-step__orb">{i + 1}</span>
-                <h4>{step.title}</h4>
-                <p>{step.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+        </section>
       </section>
     </div>
   );
@@ -201,50 +236,62 @@ function WorkspaceDashboard({
 }) {
   return (
     <section id="dashboard" className="home-dashboard">
-      <div className="home-dashboard__zone">
-        <span className="home-dashboard__badge">✦ Your dashboard</span>
+      <div className="home-dashboard__shell glass-panel glass-panel--glow">
+        <div className="home-dashboard__top">
+          <div className="home-dashboard__intro">
+            <span className="ds-badge">Your dashboard</span>
+            <h2 className="home-dashboard__title">Your workspaces</h2>
+            <p className="home-dashboard__subtitle">
+              Jump into an existing space or spin up a new one for your team.
+            </p>
+            {workspaces.length > 0 && (
+              <LiveDot label={`${workspaces.length} workspace${workspaces.length === 1 ? '' : 's'}`} pulse />
+            )}
+          </div>
 
-        <header className="home-dashboard__header">
-          <h2>Your Workspaces</h2>
-          <p>Jump into an existing workspace or create a new one for your team</p>
-        </header>
+          <form onSubmit={onCreate} className="home-dashboard__create glass-panel">
+            <label htmlFor="new-workspace" className="home-dashboard__create-label">
+              New workspace
+            </label>
+            <div className="home-dashboard__create-row">
+              <input
+                id="new-workspace"
+                type="text"
+                value={newWorkspaceName}
+                onChange={(e) => setNewWorkspaceName(e.target.value)}
+                placeholder="e.g. Product design, Sprint planning..."
+                className="home-dashboard__input"
+                required
+              />
+              <button type="submit" disabled={loading} className="btn-primary btn-gradient">
+                {loading ? 'Creating...' : 'Create'}
+              </button>
+            </div>
+          </form>
+        </div>
 
-        <form onSubmit={onCreate} className="home-create-form">
-          <input
-            type="text"
-            value={newWorkspaceName}
-            onChange={(e) => setNewWorkspaceName(e.target.value)}
-            placeholder="Name your new workspace..."
-            className="input-field"
-            required
-          />
-          <button type="submit" disabled={loading} className="btn-primary home-btn-glow" style={{ width: 'auto', flexShrink: 0 }}>
-            {loading ? 'Creating...' : '+ Create workspace'}
-          </button>
-        </form>
-
-        {error && <p style={{ color: 'var(--danger)', fontSize: '0.875rem', marginBottom: '1.25rem' }}>{error}</p>}
+        {error && <p className="home-dashboard__error">{error}</p>}
 
         {workspaces.length > 0 ? (
-          <div className="home-workspace-grid">
+          <div className="home-dashboard__grid">
             {workspaces.map((ws) => (
-              <Link key={ws.id} to={`/workspace/${ws.id}`} className="home-workspace-card">
-                <div className="home-workspace-card__inner">
-                  <div className="workspace-avatar">{ws.name.charAt(0).toUpperCase()}</div>
-                  <div style={{ minWidth: 0 }}>
-                    <h3>{ws.name}</h3>
-                    <p className="home-workspace-card__role">{ws.role} workspace</p>
-                  </div>
+              <Link key={ws.id} to={`/workspace/${ws.id}`} className="home-ws-tile glass-panel">
+                <div className="home-ws-tile__accent" aria-hidden />
+                <div className="home-ws-tile__avatar">{ws.name.charAt(0).toUpperCase()}</div>
+                <div className="home-ws-tile__body">
+                  <h3>{ws.name}</h3>
+                  <span className="home-ws-tile__role">{ws.role}</span>
                 </div>
+                <span className="home-ws-tile__arrow" aria-hidden>→</span>
               </Link>
             ))}
           </div>
         ) : (
-          <div className="home-empty-state">
-            <div className="home-empty-state__icon">🏢</div>
-            <p style={{ fontWeight: 600, marginBottom: '0.35rem' }}>No workspaces yet</p>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-              Create your first workspace above to start collaborating.
+          <div className="home-dashboard__empty glass-panel">
+            <div className="home-dashboard__empty-icon" aria-hidden>◇</div>
+            <p className="home-dashboard__empty-title">No workspaces yet</p>
+            <p className="home-dashboard__empty-desc">
+              Name your first workspace above — you&apos;ll be drawing in seconds.
             </p>
           </div>
         )}
