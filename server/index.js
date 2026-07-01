@@ -31,6 +31,7 @@ const { authLimiter, apiLimiter } = require('./middleware/rateLimiter');
 const errorHandler = require('./middleware/errorHandler');
 const { registerSocketHandlers } = require('./socket/handlers');
 const { runMigrations } = require('./db/migrate');
+const { syncStripePlansIfNeeded } = require('./services/stripePlans');
 
 validateEnv();
 
@@ -171,6 +172,15 @@ async function start() {
       process.exit(1);
     }
     console.error('Run migrations: npm run db:migrate');
+  }
+
+  if (process.env.STRIPE_SECRET_KEY && process.env.RUN_STRIPE_SYNC_ON_START !== 'false') {
+    try {
+      await syncStripePlansIfNeeded();
+    } catch (err) {
+      console.error('Stripe plan sync failed:', err.message);
+      if (deployed) process.exit(1);
+    }
   }
 
   try {
