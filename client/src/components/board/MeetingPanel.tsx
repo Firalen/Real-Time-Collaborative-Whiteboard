@@ -21,11 +21,13 @@ function VideoTile({
   label,
   muted: audioMuted,
   mirror,
+  active,
 }: {
   stream: MediaStream | null;
   label: string;
   muted?: boolean;
   mirror?: boolean;
+  active?: boolean;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
 
@@ -36,13 +38,14 @@ function VideoTile({
   }, [stream]);
 
   return (
-    <div className="meeting-tile">
+    <div className={`meeting-pip-tile${active ? ' meeting-pip-tile--active' : ''}`}>
       <video
         ref={ref}
         autoPlay
         playsInline
         muted={audioMuted}
         className={mirror ? 'mirror' : ''}
+        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
       />
       <span className="meeting-tile-label">{label}</span>
     </div>
@@ -66,13 +69,13 @@ export default function MeetingPanel(props: MeetingPanelProps) {
       {props.error && <p className="meeting-error">{props.error}</p>}
 
       {!props.inCall ? (
-        <button type="button" className="panel-btn meeting-join-btn" onClick={props.onJoin}>
-          📹 Join call
+        <button type="button" className="panel-btn meeting-join-btn btn-gradient" onClick={props.onJoin}>
+          Join call
         </button>
       ) : (
         <>
-          <div className="meeting-grid">
-            <VideoTile stream={props.localStream} label="You" muted mirror />
+          <div className="meeting-pip-grid">
+            <VideoTile stream={props.localStream} label="You" muted mirror active />
             {props.remotePeers.map((p) => (
               <VideoTile key={p.userId} stream={p.stream} label={p.name} />
             ))}

@@ -109,7 +109,7 @@ function HomeShowcase({ loggedIn }: { loggedIn: boolean }) {
             <div className="home-hero__actions">
               {!loggedIn ? (
                 <>
-                  <Link to="/login" className="btn-primary home-btn-glow" style={{ width: 'auto' }}>
+                  <Link to="/login" className="btn-primary btn-gradient home-btn-glow" style={{ width: 'auto' }}>
                     Start for free →
                   </Link>
                   <Link to="/gallery" className="home-btn-outline">
@@ -117,7 +117,7 @@ function HomeShowcase({ loggedIn }: { loggedIn: boolean }) {
                   </Link>
                 </>
               ) : (
-                <a href="#dashboard" className="btn-primary home-btn-glow" style={{ width: 'auto' }}>
+                <a href="#dashboard" className="btn-primary btn-gradient home-btn-glow" style={{ width: 'auto' }}>
                   Open dashboard ↓
                 </a>
               )}

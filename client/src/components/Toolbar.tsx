@@ -54,7 +54,7 @@ export default function Toolbar({
   canRedo,
 }: ToolbarProps) {
   return (
-    <div className="toolbar">
+    <div className="toolbar-floating">
       <div className="toolbar-section tools-primary">
         {TOOLS.filter((t) => ['select', 'pen', 'eraser'].includes(t.id)).map((t) => (
           <button
@@ -70,7 +70,7 @@ export default function Toolbar({
 
       <div className="toolbar-divider" />
 
-      <div className="toolbar-section tools-shapes">
+      <div className="toolbar-section toolbar-section--expandable tools-shapes">
         {TOOLS.filter((t) => ['rectangle', 'circle', 'line', 'text', 'sticky'].includes(t.id)).map((t) => (
           <button
             key={t.id}
@@ -87,7 +87,7 @@ export default function Toolbar({
 
       {tool !== 'eraser' && (
         <>
-      <div className="toolbar-section colors">
+      <div className="toolbar-section toolbar-section--expandable colors">
         {COLORS.map((c) => (
           <button
             key={c}
@@ -110,7 +110,7 @@ export default function Toolbar({
         </>
       )}
 
-      <div className="toolbar-section">
+      <div className="toolbar-section toolbar-section--expandable">
         <label className="stroke-label">
           {tool === 'eraser' ? 'Eraser' : 'Size'}
           <input
@@ -126,7 +126,7 @@ export default function Toolbar({
 
       <div className="toolbar-divider" />
 
-      <div className="toolbar-section">
+      <div className="toolbar-section toolbar-section--expandable">
         <button className="tool-btn" onClick={onGroup} title="Group (Ctrl+G)">⊞</button>
         <button className="tool-btn" onClick={onUngroup} title="Ungroup (Ctrl+Shift+G)">⊟</button>
         <label className="tool-btn image-upload" title="Upload image">

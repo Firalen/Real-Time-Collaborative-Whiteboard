@@ -262,7 +262,7 @@ export default function Canvas({ boardId, board, viewOnly = false }: CanvasProps
       />
 
       <div className="canvas-area">
-        <nav className="board-nav" aria-label="Board navigation">
+        <nav className="board-nav glass-panel" style={{ margin: '0.75rem', borderRadius: 'var(--radius-lg)', flexShrink: 0 }} aria-label="Board navigation">
           <Link to={backHref} className="board-nav__back">
             <span aria-hidden>←</span>
             {backLabel}
@@ -273,24 +273,26 @@ export default function Canvas({ boardId, board, viewOnly = false }: CanvasProps
         </nav>
 
         {!viewOnly && (
-          <Toolbar
-            tool={tool}
-            color={color}
-            strokeWidth={strokeWidth}
-            onToolChange={setTool}
-            onColorChange={setColor}
-            onStrokeWidthChange={setStrokeWidth}
-            onUndo={() => { undo(); updateHistoryState(); }}
-            onRedo={() => { redo(); updateHistoryState(); }}
-            onExport={exportPNG}
-            onClear={() => { if (confirm('Clear canvas?')) clearCanvas(); }}
-            onGroup={groupSelection}
-            onUngroup={ungroupSelection}
-            onImageUpload={handleImageUpload}
-            onShowShortcuts={() => setShowShortcuts(true)}
-            canUndo={canUndo}
-            canRedo={canRedo}
-          />
+          <div className="toolbar-float-wrap">
+            <Toolbar
+              tool={tool}
+              color={color}
+              strokeWidth={strokeWidth}
+              onToolChange={setTool}
+              onColorChange={setColor}
+              onStrokeWidthChange={setStrokeWidth}
+              onUndo={() => { undo(); updateHistoryState(); }}
+              onRedo={() => { redo(); updateHistoryState(); }}
+              onExport={exportPNG}
+              onClear={() => { if (confirm('Clear canvas?')) clearCanvas(); }}
+              onGroup={groupSelection}
+              onUngroup={ungroupSelection}
+              onImageUpload={handleImageUpload}
+              onShowShortcuts={() => setShowShortcuts(true)}
+              canUndo={canUndo}
+              canRedo={canRedo}
+            />
+          </div>
         )}
 
         <ViewportControls

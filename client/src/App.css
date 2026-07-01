@@ -6,29 +6,14 @@
   padding: 0;
 }
 
-:root {
-  --bg: #0a0b10;
-  --surface: #12141c;
-  --surface-2: #1a1d2e;
-  --surface-3: #22263a;
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.14);
-  --text: #f1f5f9;
-  --text-muted: #94a3b8;
-  --primary: #8b5cf6;
-  --primary-hover: #a78bfa;
-  --accent: #22d3ee;
-  --danger: #f87171;
-  --radius: 10px;
-  --radius-lg: 16px;
-  --shadow-glow: 0 0 40px rgba(139, 92, 246, 0.15);
-}
+/* Semantic tokens live in design-system/tokens.css */
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body);
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
+  transition: background var(--duration-normal), color var(--duration-normal);
 }
 
 a {
