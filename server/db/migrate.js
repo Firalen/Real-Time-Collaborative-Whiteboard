@@ -6,9 +6,16 @@ const schemaV3 = require('./schema-v3');
 const seedWorkspaces = require('./seed-workspaces');
 const seedPlans = require('./seed-plans');
 
+const HOSTED_DB_PATTERN = /render\.com|railway\.app|supabase\.co|neon\.tech|amazonaws\.com/i;
+
 async function ensureDatabase() {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) throw new Error('DATABASE_URL is not set');
+
+  // Render/Railway/etc. already provision the database — skip CREATE DATABASE
+  if (HOSTED_DB_PATTERN.test(databaseUrl)) {
+    return;
+  }
 
   const url = new URL(databaseUrl);
   const dbName = url.pathname.replace(/^\//, '');
@@ -16,7 +23,7 @@ async function ensureDatabase() {
 
   const adminPool = new Pool({
     connectionString: url.toString(),
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    ssl: pool.resolveSsl(),
   });
 
   try {
@@ -72,7 +79,7 @@ async function migrateV3(client) {
   console.log('✓ Seeded subscription plans & feature flags');
 }
 
-async function migrate() {
+async function runMigrations() {
   await ensureDatabase();
 
   const client = await pool.connect();
@@ -83,11 +90,16 @@ async function migrate() {
     console.log('All migrations completed successfully.');
   } finally {
     client.release();
-    await pool.end();
   }
 }
 
-migrate().catch((err) => {
-  console.error('Migration failed:', err.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  runMigrations()
+    .then(() => pool.end())
+    .catch((err) => {
+      console.error('Migration failed:', err.message);
+      process.exit(1);
+    });
+}
+
+module.exports = { runMigrations };

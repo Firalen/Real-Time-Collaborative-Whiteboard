@@ -6,7 +6,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const { Server } = require('socket.io');
 
-const { validateEnv } = require('./config/env');
+const { validateEnv, isDeployed } = require('./config/env');
 const pool = require('./db/pool');
 const { connectRedis } = require('./redis');
 const authRoutes = require('./routes/auth');
@@ -30,10 +30,17 @@ const { UPLOAD_DIR } = require('./services/storage');
 const { authLimiter, apiLimiter } = require('./middleware/rateLimiter');
 const errorHandler = require('./middleware/errorHandler');
 const { registerSocketHandlers } = require('./socket/handlers');
+const { runMigrations } = require('./db/migrate');
 
 validateEnv();
 
 const app = express();
+
+// Render, Railway, Vercel, etc. sit behind a reverse proxy
+if (isDeployed() || process.env.TRUST_PROXY === 'true') {
+  app.set('trust proxy', 1);
+}
+
 const server = http.createServer(app);
 
 const allowedOrigins = [
@@ -129,15 +136,38 @@ app.set('io', io);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 3001;
-const isProduction = process.env.NODE_ENV === 'production';
+const deployed = isDeployed();
 
 async function start() {
+  const dbHost = (() => {
+    try {
+      return new URL(process.env.DATABASE_URL || '').hostname || '(not set)';
+    } catch {
+      return '(invalid DATABASE_URL)';
+    }
+  })();
+  console.log(`Booting server (NODE_ENV=${process.env.NODE_ENV || 'development'}, db host=${dbHost})`);
+
+  const skipMigrations = process.env.SKIP_MIGRATIONS === 'true';
+  const autoMigrate = process.env.RUN_MIGRATIONS_ON_START !== 'false' && deployed;
+
+  if (!skipMigrations && autoMigrate) {
+    try {
+      console.log('Running database migrations on startup...');
+      await runMigrations();
+    } catch (err) {
+      console.error('Migration failed:', err.message);
+      process.exit(1);
+    }
+  }
+
   try {
     await pool.query('SELECT 1');
     console.log('Connected to PostgreSQL');
   } catch (err) {
     console.error('PostgreSQL connection failed:', err.message);
-    if (isProduction) {
+    if (deployed) {
+      console.error('Check DATABASE_URL on Render — use Internal Database URL from Postgres → Connect');
       process.exit(1);
     }
     console.error('Run migrations: npm run db:migrate');
@@ -159,7 +189,7 @@ async function start() {
   });
 
   server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT} (${process.env.NODE_ENV || 'development'})`);
+    console.log(`Server running on port ${PORT} (${deployed ? 'production' : 'development'})`);
   });
 }
 

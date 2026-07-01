@@ -6,6 +6,7 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many auth attempts, please try again later' },
+  validate: { xForwardedForHeader: false },
 });
 
 const apiLimiter = rateLimit({
@@ -14,6 +15,7 @@ const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please slow down' },
+  validate: { xForwardedForHeader: false },
 });
 
 module.exports = { authLimiter, apiLimiter };

@@ -130,6 +130,46 @@ INSERT INTO super_admins (user_id) SELECT id FROM users WHERE email = 'you@examp
 
 ## Deployment
 
+### Backend (Render — free tier)
+
+Render **Shell** requires a paid plan. Use one of these instead:
+
+**Option A — Auto-migrate on deploy (easiest)**  
+Migrations run automatically when the server starts in production (built in). On Render set:
+
+| Variable | Value |
+|----------|--------|
+| `NODE_ENV` | `production` |
+| `DATABASE_URL` | **Internal Database URL** (from Render Postgres → Connect) |
+| `JWT_SECRET` | long random string |
+| `CLIENT_URL` | your Vercel URL |
+
+Push code, redeploy, check Logs for `Running database migrations on startup...` and `Connected to PostgreSQL`.  
+To disable later: `RUN_MIGRATIONS_ON_START=false`
+
+**Option B — Migrate from your PC (no Render Shell)**  
+1. Render Postgres → copy **External Database URL**  
+2. On your machine:
+
+```bash
+cd server
+set DATABASE_URL=postgresql://...external-url-from-render...
+set NODE_ENV=production
+npm run db:migrate
+```
+
+(PowerShell: `$env:DATABASE_URL="..."; $env:NODE_ENV="production"; npm run db:migrate`)
+
+3. On Render web service, use the **Internal** `DATABASE_URL` (not External)
+
+**Render web service settings**
+
+| Setting | Value |
+|---------|--------|
+| Root Directory | `server` |
+| Build Command | `npm install` |
+| Start Command | `npm start` |
+
 ### Backend (Railway)
 
 1. Create a new Railway project
